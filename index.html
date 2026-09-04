@@ -114,14 +114,14 @@
         <button class="tool-btn" id="tool-line" onclick="setTool('line')" title="เส้นตรง"><i class="fa-solid fa-minus"></i></button>
         <button class="tool-btn" id="tool-rect" onclick="setTool('rect')" title="สี่เหลี่ยม"><i class="fa-regular fa-square"></i></button>
         <button class="tool-btn" id="tool-circle" onclick="setTool('circle')" title="วงกลม"><i class="fa-regular fa-circle"></i></button>
-        <button class="tool-btn" id="tool-fill" onclick="toggleFill()" title="ระบายสีทึบ"><i class="fa-solid fa-fill-drip"></i></button>
+        <button class="tool-btn" id="tool-fill" onclick="toggleFill()" title="เปิด/ปิด ระบายสีทึบ"><i class="fa-solid fa-fill-drip"></i></button>
         <div style="width: 1px; height: 20px; background: var(--border-color); margin: 0 5px;"></div>
         <div class="color-dot active" style="background:#2563eb;" onclick="setColor('#2563eb', this)"></div>
         <div class="color-dot" style="background:#dc2626;" onclick="setColor('#dc2626', this)"></div>
         <div class="color-dot" style="background:#16a34a;" onclick="setColor('#16a34a', this)"></div>
         <div class="color-dot" style="background:#1e293b;" onclick="setColor('#1e293b', this)"></div>
         <div style="width: 1px; height: 20px; background: var(--border-color); margin: 0 5px;"></div>
-        <input type="range" id="pen-size" class="size-slider" min="1" max="20" value="2" onchange="updateSize(this.value)">
+        <input type="range" id="pen-size" class="size-slider" min="1" max="20" value="2" onchange="updateSize(this.value)" title="ปรับขนาดปากกา">
     </div>
 
     <div class="container">
@@ -184,8 +184,10 @@
     </div>
 
     <script>
-        // ใส่ URL ที่ถูกต้องให้แล้วครับ
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxVyMQs_5hn-bbhd4OFGwr8NNc2Ev8CJ7tMjQ0T9jTJzcZmZOW0TREdRDC-8aRSIiP3/exec'; 
+        // ----------------------------------------------------------------------------------
+        // นำ URL ตัวใหม่ล่าสุดมาวางแทนที่ด้านล่างนี้เลยครับ
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbzxYnKisiqrywAuCvHnSMYnobu6DXOtJ3SmJRskHW-KPfmAwTFl3Igyr7PJKi-bYvmW/exec'; 
+        // ----------------------------------------------------------------------------------
 
         let patientsData = [];
         let globalState = {}; 
@@ -215,7 +217,6 @@
             isFillShape = !isFillShape; document.getElementById('tool-fill').classList.toggle('active', isFillShape);
         }
 
-        // --- ระบบดึงข้อมูลพร้อม Fallback ---
         async function fetchDataFromServer(showLoader = true, isSilentSync = false) {
             const loader = document.getElementById('loading-screen');
             const pBar = document.getElementById('load-bar');
@@ -225,14 +226,6 @@
                 loader.style.display = 'flex';
                 pBar.style.width = '10%'; pText.innerText = '10%';
             }
-
-            // Fallback timer กรณีเซิร์ฟเวอร์ตายหรือโหลดนานกว่า 8 วินาที
-            const fallbackTimer = setTimeout(() => {
-                if (loader.style.display !== 'none') {
-                    loader.style.display = 'none';
-                    if (patientsData.length === 0) loadMockData();
-                }
-            }, 8000);
 
             let percent = 10;
             const interval = setInterval(() => {
@@ -244,11 +237,9 @@
             try {
                 const response = await fetch(GAS_URL);
                 if (!response.ok) throw new Error('Network error');
-                const resData = await response.json();
                 
-                clearInterval(interval);
-                clearTimeout(fallbackTimer);
-                if(showLoader && !isSilentSync) { pBar.style.width = '100%'; pText.innerText = '100%'; }
+                const resData = await response.json();
+                if(resData.error) throw new Error(resData.error);
                 
                 if (Array.isArray(resData)) patientsData = resData;
                 else patientsData = resData.patients || [];
@@ -271,27 +262,29 @@
                     }
                 });
 
-                if(showLoader && !isSilentSync) { setTimeout(() => { loader.style.display = 'none'; }, 400); }
+                clearInterval(interval);
+                if(showLoader && !isSilentSync) {
+                    pBar.style.width = '100%'; pText.innerText = '100%';
+                    setTimeout(() => { loader.style.display = 'none'; }, 300);
+                }
+                
                 if(needRender || (showLoader && !isSilentSync)) initApp();
                 document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-check" style="color:#10b981;"></i> ซิงก์แล้ว';
                 
             } catch (err) {
                 clearInterval(interval);
-                clearTimeout(fallbackTimer);
                 if(showLoader && !isSilentSync) loader.style.display = 'none';
                 
-                if (patientsData.length === 0) loadMockData();
-                if(!isSilentSync) Swal.fire('ข้อมูลมีปัญหา', 'ระบบใช้ข้อมูลจำลองชั่วคราว กรุณาตรวจสอบอินเทอร์เน็ต', 'warning');
+                if (patientsData.length === 0) {
+                    patientsData = [ { bed:"01", an:"AN-0000", name:"(ไม่มีข้อมูล) โหลดไม่สำเร็จ", dx:"-", rec:"-", dtx:"-", hct:"-", film:"-", ds:"-", consult:"-", nebulizer1:"-", nebulizer2:"-", onedayStat:"-", hc2:"-", hc5:"-", lab:"-" } ];
+                    patientsData.forEach(pt => {
+                        if(!globalState[pt.bed]) globalState[pt.bed] = { text: '', canvas: null, stampCount: 0, photos: [], lastUpdate: 0, io:'', film:'', ds:'', consult:'', hc2:'', hc5:'', lab:'' };
+                    });
+                    initApp();
+                }
+                if(!isSilentSync) Swal.fire('โหลดข้อมูลล้มเหลว', 'ตรวจสอบ Web App URL ในโค้ดว่าถูกต้องหรือไม่', 'error');
                 document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-xmark" style="color:#ef4444;"></i> ออฟไลน์';
             }
-        }
-
-        function loadMockData() {
-            patientsData = [ { bed:"01", an:"AN-0000", name:"(ตัวอย่าง) ไม่มีอินเทอร์เน็ต", dx:"-", rec:"-", dtx:"-", hct:"-", film:"-", ds:"-", consult:"-", nebulizer1:"-", nebulizer2:"-", onedayStat:"-", hc2:"-", hc5:"-", lab:"-" } ];
-            patientsData.forEach(pt => {
-                if(!globalState[pt.bed]) globalState[pt.bed] = { text: '', canvas: null, stampCount: 0, photos: [], lastUpdate: 0, io:'', film:'', ds:'', consult:'', hc2:'', hc5:'', lab:'' };
-            });
-            initApp();
         }
 
         setInterval(() => fetchDataFromServer(false, true), 10000);
@@ -327,7 +320,6 @@
             handleStateChange(bed, 'text', currentText + (currentText ? '\n' : '') + `${label}: ${text}`);
         }
 
-        // --- อัปโหลดภาพ & แชร์ ---
         async function handlePhotoUpload(bed, input) {
             const files = input.files;
             if(!globalState[bed].photos) globalState[bed].photos = [];
@@ -551,8 +543,7 @@
             if (!canvas || canvas.getBoundingClientRect().width === 0) return;
             const ctx = canvas.getContext('2d');
             
-            // ทำให้ Canvas กว้างเท่าขนาดจริงในจอ
-            const enforceSize = () => {
+            const setSize = () => {
                 const rect = canvas.parentElement.getBoundingClientRect();
                 if(rect.width > 0 && canvas.width !== Math.floor(rect.width)) {
                     canvas.width = rect.width; canvas.height = rect.height;
@@ -561,12 +552,12 @@
                     }
                 }
             };
-            enforceSize();
+            setSize();
 
             let isDrawing = false, startX, startY, snapshot;
             canvas.addEventListener('pointerdown', (e) => {
                 if (e.pointerType !== 'pen' && e.pointerType !== 'mouse') return;
-                enforceSize();
+                setSize();
                 isDrawing = true; startX = e.offsetX; startY = e.offsetY;
                 snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 ctx.beginPath(); ctx.moveTo(startX, startY);
@@ -598,7 +589,7 @@
             Swal.fire({ title: 'ยืนยันลบกระดาน?', text: "เฉพาะรูปลายเส้นและแบบฟอร์มบนกระดานจะหายไป", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ลบทิ้ง', cancelButtonText: 'ยกเลิก' }).then((r) => {
                 if (r.isConfirmed) {
                     globalState[bed].canvas = null; globalState[bed].stampCount = 0; globalState[bed].lastUpdate = Date.now();
-                    document.querySelectorAll(`canvas[id$="-${bed}"]`).forEach(c => {if(c.getContext) {c.getContext('2d').clearRect(0,0, c.width, c.height);}});
+                    document.querySelectorAll(`canvas[id$="-${bed}"]`).forEach(c => {if(c.getContext) c.getContext('2d').clearRect(0,0, c.width, c.height);});
                     triggerCloudSync(); Swal.fire('ลบแล้ว!', '', 'success');
                 }
             });
@@ -609,7 +600,6 @@
             if(!activeCanvasId) return;
             const canvas = document.getElementById(activeCanvasId); const ctx = canvas.getContext('2d');
             const imgSize = 90; const padding = 10; let count = globalState[activeBed].stampCount || 0;
-            
             if(canvas.width === 0) { const rect = canvas.parentElement.getBoundingClientRect(); canvas.width = rect.width; canvas.height = rect.height; }
             
             const cols = Math.max(1, Math.floor(canvas.width / (imgSize + padding)));
@@ -667,8 +657,6 @@
                 }
             });
         }
-
-        window.onload = () => fetchDataFromServer(true, false);
     </script>
 </body>
 </html>
