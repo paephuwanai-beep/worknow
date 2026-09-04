@@ -34,7 +34,7 @@
         .color-dot.active { transform: scale(1.15); border-color: var(--text-main); }
 
         .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
-        .patient-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 24px; margin-bottom: 24px; }
+        .patient-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
         .card-header { display: flex; align-items: center; gap: 15px; border-bottom: 2px solid var(--primary); padding-bottom: 12px; margin-bottom: 20px; }
         .bed-badge { font-size: 1.2rem; font-weight: 700; color: var(--primary); }
         
@@ -53,23 +53,23 @@
 
         .input-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
         .input-group label { font-size: 0.85rem; font-weight: 600; color: var(--primary); }
-        .input-group input { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-family: inherit; }
+        .input-group input { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-family: inherit; font-size: 0.95rem; }
 
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px 0; z-index: 100; }
         .nav-item { background: none; border: none; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; }
         .nav-item.active { color: var(--primary); }
 
-        /* Anatomy & Views */
         .anatomy-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:200; align-items:center; justify-content:center; }
         .anatomy-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px; }
-        .anatomy-btn { border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; cursor: pointer; text-align: center; }
+        .anatomy-btn { border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; cursor: pointer; text-align: center; font-size: 0.9rem; font-weight: 600;}
         .anatomy-btn:hover { background: #f0f9ff; border-color: var(--primary); }
-        .history-table { width: 100%; border-collapse: collapse; }
-        .history-table th, .history-table td { padding: 12px; border-bottom: 1px solid var(--border-color); text-align: left; }
         
         .card-view-selector { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 15px; margin-bottom: 15px; }
         .bed-pill { background: var(--bg-card); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 20px; cursor: pointer; white-space: nowrap; font-weight: 500; }
         .bed-pill.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        
+        .history-table { width: 100%; border-collapse: collapse; }
+        .history-table th, .history-table td { padding: 12px; border-bottom: 1px solid var(--border-color); text-align: left; }
     </style>
 </head>
 <body>
@@ -84,6 +84,7 @@
         </div>
     </header>
 
+    <!-- Toolbar วาดรูป -->
     <div class="pen-toolbar">
         <button class="tool-btn active" id="tool-pen" onclick="setTool('pen')"><i class="fa-solid fa-pen"></i></button>
         <button class="tool-btn" id="tool-highlighter" onclick="setTool('highlighter')"><i class="fa-solid fa-highlighter"></i></button>
@@ -95,7 +96,9 @@
     </div>
 
     <div class="container">
-        <div id="loader" style="text-align:center; padding: 40px; color:var(--primary);">โหลดข้อมูล PTform...</div>
+        <div id="loader" style="text-align:center; padding: 40px; color:var(--primary);">
+            <i class="fa-solid fa-circle-notch fa-spin"></i> โหลดข้อมูล PTform...
+        </div>
         
         <div id="view-worklist" style="display: none;"></div>
         
@@ -111,7 +114,7 @@
                 <h3 style="color:var(--primary);"><i class="fa-solid fa-clock-rotate-left"></i> ประวัติบันทึกเวร</h3>
                 <div style="overflow-x: auto; margin-top: 15px;">
                     <table class="history-table">
-                        <thead><tr><th>เวลา</th><th>ผู้บันทึก</th><th>ลบ</th></tr></thead>
+                        <thead><tr><th>เวลา</th><th>ผู้บันทึก</th><th>จำนวนเตียง</th><th>ลบ</th></tr></thead>
                         <tbody id="history-list"></tbody>
                     </table>
                 </div>
@@ -119,7 +122,7 @@
         </div>
     </div>
 
-    <!-- แถบเมนู 4 เมนู -->
+    <!-- เมนูด้านล่าง -->
     <nav class="bottom-nav">
         <button class="nav-item active" id="nav-worklist" onclick="switchView('worklist')"><i class="fa-solid fa-list"></i> WORK list</button>
         <button class="nav-item" id="nav-workcard" onclick="switchView('workcard')"><i class="fa-regular fa-address-card"></i> WORK card</button>
@@ -131,7 +134,7 @@
     <div class="anatomy-modal" id="anatomy-modal">
         <div style="background:#fff; padding:25px; border-radius:8px; width:90%; max-width:400px;">
             <div style="display:flex; justify-content:space-between;">
-                <h3 style="color:var(--primary);">เลือกรูป Anatomy</h3>
+                <h3 style="color:var(--primary);">แทรกรูป Anatomy</h3>
                 <button onclick="document.getElementById('anatomy-modal').style.display='none'" style="border:none; background:none; font-size:1.5rem; cursor:pointer;">&times;</button>
             </div>
             <div class="anatomy-grid">
@@ -145,25 +148,43 @@
         </div>
     </div>
 
+    <!-- Modal บันทึกเวร -->
+    <div id="save-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:200; align-items:center; justify-content:center;">
+        <div style="background:#fff; padding:25px; border-radius:8px; width:90%; max-width:400px;">
+            <h3 style="margin-bottom:15px; color:var(--primary);">ยืนยันบันทึกส่งเวร</h3>
+            <div style="margin-bottom: 20px;">
+                <label style="display:block; font-size:0.9rem; margin-bottom:5px; color:var(--text-muted);">ชื่อพยาบาลเวร *</label>
+                <input type="text" id="nurse-name" style="width:100%; padding:10px; border:1px solid var(--border-color); border-radius:4px; font-family:inherit;">
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button onclick="document.getElementById('save-modal').style.display='none'" style="padding:8px 16px; background:#f1f5f9; border:none; border-radius:4px; cursor:pointer;">ยกเลิก</button>
+                <button onclick="confirmSave()" style="padding:8px 16px; background:var(--primary); color:#fff; border:none; border-radius:4px; cursor:pointer;">บันทึกข้อมูล</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // *** วาง URL ใหม่ตรงนี้ ***
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbz9YA6oQLWeJGvweDMDBYqkdf3bU_FBeIQ-AU9DzoudMaWu7ZB_r00sccGnF396FzFJ/exec'; 
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbyqEPFx1vbnhVz82g_ajlsJK9kFek_dVRyK4-j91AeDwe-n3RJGtxXoV-OUJuVtCEYK/exec'; 
 
         let patientsData = [];
         let canvasDrawings = {}; 
         let currentTool = 'pen'; 
         let currentColor = '#2563eb'; 
+        
         let activeCanvasId = null;
         let currentBedIndex = 0;
+        
+        // ตัวแปรเก็บตำแหน่งการแสตมป์ Anatomy ของแต่ละ Canvas เพื่อไม่ให้ทับกัน
+        let anatomyPositions = {}; 
 
-        // ฝังรูปภาพ SVG ลงในโค้ดโดยตรง (ไม่ต้องดึงจากเน็ต)
         const anatomyImages = {
-            body: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%23333" stroke-width="2"><circle cx="50" cy="15" r="8"/><path d="M30 35h40v40H30zM30 35l-15 20M70 35l15 20M40 75v20M60 75v20"/></svg>',
-            head: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%23333" stroke-width="2"><circle cx="50" cy="45" r="30"/><path d="M50 75v25M25 100h50"/></svg>',
-            arm: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%23333" stroke-width="2"><path d="M20 20c20 0 40 20 40 40s-20 40-40 40"/></svg>',
-            leg: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%23333" stroke-width="2"><path d="M40 10v60c0 10 20 10 20 0V10"/></svg>',
-            lungs: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%23333" stroke-width="2"><path d="M50 10v30M30 40c-15-10-20 10-10 30s25 20 25-10V40zM70 40c15-10 20 10 10 30s-25 20-25-10V40z"/></svg>',
-            abdomen: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%23333" stroke-width="2"><rect x="20" y="20" width="60" height="60" rx="15"/></svg>'
+            body: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%239ca3af" stroke-width="2"><circle cx="50" cy="15" r="8"/><path d="M30 35h40v40H30zM30 35l-15 20M70 35l15 20M40 75v20M60 75v20"/></svg>',
+            head: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%239ca3af" stroke-width="2"><circle cx="50" cy="45" r="30"/><path d="M50 75v25M25 100h50"/></svg>',
+            arm: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%239ca3af" stroke-width="2"><path d="M20 20c20 0 40 20 40 40s-20 40-40 40"/></svg>',
+            leg: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%239ca3af" stroke-width="2"><path d="M40 10v60c0 10 20 10 20 0V10"/></svg>',
+            lungs: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%239ca3af" stroke-width="2"><path d="M50 10v30M30 40c-15-10-20 10-10 30s25 20 25-10V40zM70 40c15-10 20 10 10 30s-25 20-25-10V40z"/></svg>',
+            abdomen: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%239ca3af" stroke-width="2"><rect x="20" y="20" width="60" height="60" rx="15"/></svg>'
         };
 
         function setTool(tool) {
@@ -179,7 +200,6 @@
             if(currentTool === 'eraser') setTool('pen');
         }
 
-        // ระบบ 4 เมนู
         function switchView(viewName) {
             document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`nav-${viewName}`).classList.add('active');
@@ -198,8 +218,10 @@
                 const response = await fetch(GAS_URL);
                 patientsData = await response.json();
             } catch (err) {
+                // ข้อมูลตัวอย่างหากเกิด Error
                 patientsData = [
-                    { bed:"01", an:"AN-1234", name:"นายเหลี่ยม เสาสิม", dx:"#Pneumonia", rec:"Dressing wound OD", dtx:"-", hct:"-", film:"-", ds:"18.00", consult:"-", nebulizer1:"BERODUAL 1 NB", nebulizer2:"-", onedayStat:"Soft diet", hc2:"-", hc5:"-", lab:"-" }
+                    { bed:"01", an:"AN-1234", name:"นายเหลี่ยม เสาสิม", dx:"#Pneumonia", rec:"Dressing wound OD", dtx:"-", hct:"-", film:"CXR", ds:"18.00", consult:"-", nebulizer1:"BERODUAL 1 NB", nebulizer2:"-", onedayStat:"Soft diet", hc2:"-", hc5:"-", lab:"CBC, BUN, Cr" },
+                    { bed:"02", an:"AN-5678", name:"นายสมยงค์ ริ่งไธสงค์", dx:"AGE c dehydration", rec:"Stool exam UC", dtx:"-", hct:"-", film:"-", ds:"-", consult:"-", nebulizer1:"-", nebulizer2:"-", onedayStat:"Regular diet", hc2:"-", hc5:"-", lab:"Stool exam UC" }
                 ];
             }
             document.getElementById('loader').style.display = 'none';
@@ -219,6 +241,7 @@
             }
         }
 
+        // ฟังก์ชันสร้างกล่องข้อมูล
         function createInfoGrid(pt) {
             return `
                 <div class="info-grid">
@@ -250,6 +273,7 @@
             `;
         }
 
+        // เมนู WORK list
         function renderWorkList() {
             const container = document.getElementById('view-worklist');
             container.innerHTML = '';
@@ -283,7 +307,7 @@
             });
         }
 
-        // ระบบ WORK card
+        // เมนู WORK card
         function buildCardPills() {
             const container = document.getElementById('bed-pills');
             container.innerHTML = '';
@@ -309,6 +333,7 @@
                     <div class="card-header">
                         <span class="bed-badge">เตียง ${pt.bed}</span>
                         <span style="font-size:1.25rem; font-weight:600;">${pt.name}</span>
+                        <span style="font-size:0.9rem; color:var(--text-muted);">AN: ${pt.an}</span>
                     </div>
                     ${createInfoGrid(pt)}
                     <div class="note-section">
@@ -325,30 +350,50 @@
             setupCanvas('canvas-single', `single-${pt.bed}`);
         }
 
+        // เมนู New Order (ดึงข้อมูลเดิมมาใส่เป็น Default ในช่อง Input)
         function renderNewOrder() {
             const container = document.getElementById('view-neworder');
-            container.innerHTML = '<h3 style="margin-bottom:15px; color:var(--primary);">New Order</h3>';
+            container.innerHTML = '<h3 style="margin-bottom:15px; color:var(--primary); border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">รายการ New Order</h3>';
+            
             patientsData.forEach(pt => {
+                // กรองข้อมูลเดิม ถ้าเป็น "-" ให้เป็นช่องว่าง
+                const defaultRec = pt.rec !== '-' ? pt.rec : '';
+                const defaultFilm = pt.film !== '-' ? pt.film : '';
+                const defaultHC = (pt.hc2 !== '-' ? `H/C2: ${pt.hc2} ` : '') + (pt.hc5 !== '-' ? `H/C5: ${pt.hc5}` : '');
+                const defaultLab = (pt.lab !== '-' ? `LAB: ${pt.lab} ` : '') + (pt.consult !== '-' ? `Consult: ${pt.consult}` : '');
+
                 const card = document.createElement('div');
                 card.className = 'patient-card';
                 card.innerHTML = `
-                    <div class="card-header" style="border-bottom-color:#fbbf24;">
+                    <div class="card-header" style="border-bottom-color:#fbbf24; margin-bottom: 10px;">
                         <span class="bed-badge" style="color:#d97706;">เตียง ${pt.bed}</span>
                         <span style="font-size:1.25rem; font-weight:600;">${pt.name}</span>
                     </div>
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                        <div class="input-group"><label>I/O</label><input type="text" placeholder="เช่น 1000 ml"></div>
-                        <div class="input-group"><label>X-RAY / Film</label><input type="text"></div>
-                        <div class="input-group"><label>H/C2 & H/C5</label><input type="text"></div>
-                        <div class="input-group"><label>LAB / Consult</label><input type="text" placeholder="เช่น ค้าง, ฝากตาม"></div>
+                        <div class="input-group">
+                            <label>REC / I/O</label>
+                            <input type="text" value="${defaultRec}" placeholder="เช่น I/O 1000 ml">
+                        </div>
+                        <div class="input-group">
+                            <label>X-RAY / Film</label>
+                            <input type="text" value="${defaultFilm}">
+                        </div>
+                        <div class="input-group">
+                            <label>H/C2 & H/C5</label>
+                            <input type="text" value="${defaultHC}">
+                        </div>
+                        <div class="input-group">
+                            <label>LAB / Consult</label>
+                            <input type="text" value="${defaultLab}" placeholder="เช่น ค้าง, ฝากตาม">
+                        </div>
                     </div>
-                    <div class="note-section">
-                        <div style="display:flex; justify-content:space-between;">
-                            <label style="font-weight:600; font-size:0.9rem; color:var(--primary);">Note เพิ่มเติม</label>
+                    <div class="note-section" style="margin-top: 15px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <label style="font-weight:600; font-size:0.9rem; color:var(--primary);">Note เพิ่มเติม (พิมพ์/วาด/Anatomy)</label>
                             <button class="btn-outline" style="color:var(--primary); border-color:var(--primary); font-size:0.8rem; padding:4px 8px;" onclick="prepareAnatomy('canvas-no-${pt.bed}')">แทรก Anatomy</button>
                         </div>
-                        <textarea class="text-note" style="height:40px;"></textarea>
-                        <div class="canvas-wrapper"><canvas id="canvas-no-${pt.bed}"></canvas></div>
+                        <textarea class="text-note" style="height:50px;"></textarea>
+                        <div class="canvas-wrapper"><canvas id="canvas-no-${pt.bed}" style="height:200px;"></canvas></div>
                     </div>
                 `;
                 container.appendChild(card);
@@ -356,7 +401,7 @@
             });
         }
 
-        // ระบบวาดเขียน
+        // ระบบ Canvas & Apple Pencil
         function setupCanvas(canvasId, storageKey) {
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
@@ -364,6 +409,9 @@
             const rect = canvas.getBoundingClientRect();
             canvas.width = rect.width;
             canvas.height = rect.height;
+
+            // รีเซ็ตตำแหน่ง Anatomy Grid สำหรับ Canvas ใหม่
+            anatomyPositions[canvasId] = 0; 
 
             if (canvasDrawings[storageKey]) {
                 const img = new Image();
@@ -374,6 +422,10 @@
             let isDrawing = false;
             canvas.addEventListener('pointerdown', (e) => {
                 if (e.pointerType !== 'pen' && e.pointerType !== 'mouse') return;
+                
+                // เมื่อมีการคลิกวาด ให้ถือว่ากำลังทำงานที่ Canvas นี้
+                activeCanvasId = canvasId; 
+                
                 isDrawing = true;
                 ctx.beginPath();
                 ctx.moveTo(e.offsetX, e.offsetY);
@@ -398,7 +450,7 @@
             canvas.addEventListener('pointerleave', stopDraw);
         }
 
-        // ระบบ Anatomy ใหม่ (ปุ่มอยู่บนการ์ด ระบุเป้าหมายชัดเจน)
+        // ระบบ Anatomy ใหม่: ป้องกันการทับกัน (เรียงซ้ายไปขวา)
         function prepareAnatomy(canvasId) {
             activeCanvasId = canvasId;
             document.getElementById('anatomy-modal').style.display = 'flex';
@@ -409,31 +461,83 @@
             const canvas = document.getElementById(activeCanvasId);
             const ctx = canvas.getContext('2d');
             
+            // ขนาดรูป Anatomy ที่จะแปะ
+            const imgSize = 100;
+            const padding = 10;
+            
+            // คำนวณตำแหน่ง X และ Y ปัจจุบัน (เรียงคอลัมน์จากซ้ายไปขวา)
+            let posIndex = anatomyPositions[activeCanvasId] || 0;
+            
+            // จำนวนรูปที่ใส่ได้ต่อ 1 แถว (กว้างจอ / ขนาดรูป)
+            const cols = Math.floor(canvas.width / (imgSize + padding));
+            
+            // คำนวณแกน X (เลื่อนไปทางขวา) และ Y (ขึ้นบรรทัดใหม่ถ้ายาวเกิน)
+            const x = (posIndex % cols) * (imgSize + padding) + padding;
+            const y = Math.floor(posIndex / cols) * (imgSize + padding) + padding;
+            
             const img = new Image();
             img.onload = () => {
-                ctx.globalAlpha = 0.5; // โปร่งแสง
-                // วาดรูปไว้ตรงกลางกระดาน
-                ctx.drawImage(img, (canvas.width/2)-60, (canvas.height/2)-60, 120, 120);
+                ctx.globalAlpha = 0.5; // ทำให้สีจางเหมือนลายน้ำ
+                ctx.drawImage(img, x, y, imgSize, imgSize);
                 ctx.globalAlpha = 1.0;
+                
+                // บวก index เพิ่มสำหรับการแปะรูปรอบต่อไปจะได้ไม่ทับเดิม
+                anatomyPositions[activeCanvasId] = posIndex + 1;
+                
+                // บันทึกลง Storage 
+                const storageKey = activeCanvasId.replace('canvas-', '');
+                canvasDrawings[storageKey] = canvas.toDataURL();
+                
                 document.getElementById('anatomy-modal').style.display = 'none';
             };
             img.src = anatomyImages[part];
         }
 
-        // ระบบ History
+        // ระบบบันทึกเวร & ประวัติ
+        function openSaveModal() {
+            document.getElementById('save-modal').style.display = 'flex';
+        }
+
+        function confirmSave() {
+            const name = document.getElementById('nurse-name').value.trim();
+            if(!name) { alert('กรุณากรอกชื่อพยาบาล'); return; }
+            
+            const record = {
+                id: Date.now(),
+                time: new Date().toLocaleString('th-TH'),
+                nurse: name,
+                count: patientsData.length
+            };
+            
+            let hist = JSON.parse(localStorage.getItem('ipd3_hist') || '[]');
+            hist.unshift(record);
+            localStorage.setItem('ipd3_hist', JSON.stringify(hist));
+            
+            document.getElementById('save-modal').style.display = 'none';
+            document.getElementById('nurse-name').value = '';
+            switchView('history');
+        }
+
         function loadHistory() {
             const tbody = document.getElementById('history-list');
             const hist = JSON.parse(localStorage.getItem('ipd3_hist') || '[]');
             tbody.innerHTML = '';
+            if(hist.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px;">ยังไม่มีประวัติ</td></tr>`;
+                return;
+            }
             hist.forEach(h => {
                 tbody.innerHTML += `<tr>
                     <td>${h.time}</td>
                     <td style="color:var(--primary); font-weight:500;">${h.nurse}</td>
+                    <td>${h.count} เตียง</td>
                     <td><button onclick="delHist(${h.id})" style="border:none;background:none;color:red;cursor:pointer;"><i class="fa-solid fa-trash"></i></button></td>
                 </tr>`;
             });
         }
+
         function delHist(id) {
+            if(!confirm('ต้องการลบประวัตินี้?')) return;
             let hist = JSON.parse(localStorage.getItem('ipd3_hist') || '[]');
             localStorage.setItem('ipd3_hist', JSON.stringify(hist.filter(x => x.id !== id)));
             loadHistory();
