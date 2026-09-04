@@ -184,7 +184,7 @@
     </div>
 
     <script>
-        // ใช้ URL ล่าสุดที่คุณให้มาเลยครับ
+        // ใส่ URL ที่ถูกต้องให้แล้วครับ
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxVyMQs_5hn-bbhd4OFGwr8NNc2Ev8CJ7tMjQ0T9jTJzcZmZOW0TREdRDC-8aRSIiP3/exec'; 
 
         let patientsData = [];
@@ -215,41 +215,40 @@
             isFillShape = !isFillShape; document.getElementById('tool-fill').classList.toggle('active', isFillShape);
         }
 
-        // --- ระบบดึงข้อมูล ---
+        // --- ระบบดึงข้อมูลพร้อม Fallback ---
         async function fetchDataFromServer(showLoader = true, isSilentSync = false) {
             const loader = document.getElementById('loading-screen');
             const pBar = document.getElementById('load-bar');
-            const pText = document.getElementById('load-percent'); // นี่คือตัวแปรที่ก่อนหน้านี้ทำแอปค้างครับ
-
-            // Fallback timeout กันแอปค้าง (ถ้าเกิน 10 วิ จะเด้งเข้าข้อมูลจำลองให้ทันที)
-            const fallbackTimer = setTimeout(() => {
-                if(loader.style.display !== 'none') {
-                    loader.style.display = 'none';
-                    if(patientsData.length === 0) loadMockData();
-                }
-            }, 10000);
+            const pText = document.getElementById('load-percent');
 
             if (showLoader && !isSilentSync) {
                 loader.style.display = 'flex';
-                if(pBar) pBar.style.width = '10%'; 
-                if(pText) pText.innerText = '10%';
+                pBar.style.width = '10%'; pText.innerText = '10%';
             }
+
+            // Fallback timer กรณีเซิร์ฟเวอร์ตายหรือโหลดนานกว่า 8 วินาที
+            const fallbackTimer = setTimeout(() => {
+                if (loader.style.display !== 'none') {
+                    loader.style.display = 'none';
+                    if (patientsData.length === 0) loadMockData();
+                }
+            }, 8000);
 
             let percent = 10;
             const interval = setInterval(() => {
                 if(percent < 85 && showLoader && !isSilentSync) { 
-                    percent += 5; 
-                    if(pBar) pBar.style.width = percent + '%'; 
-                    if(pText) pText.innerText = percent + '%'; 
+                    percent += 5; pBar.style.width = percent + '%'; pText.innerText = percent + '%'; 
                 }
             }, 50);
 
             try {
                 const response = await fetch(GAS_URL);
                 if (!response.ok) throw new Error('Network error');
-                
                 const resData = await response.json();
-                if(resData.error) throw new Error(resData.error);
+                
+                clearInterval(interval);
+                clearTimeout(fallbackTimer);
+                if(showLoader && !isSilentSync) { pBar.style.width = '100%'; pText.innerText = '100%'; }
                 
                 if (Array.isArray(resData)) patientsData = resData;
                 else patientsData = resData.patients || [];
@@ -272,29 +271,23 @@
                     }
                 });
 
-                clearInterval(interval);
-                clearTimeout(fallbackTimer);
-
-                if(showLoader && !isSilentSync) {
-                    if(pBar) pBar.style.width = '100%'; 
-                    if(pText) pText.innerText = '100%';
-                    setTimeout(() => { loader.style.display = 'none'; }, 300);
-                }
-                
+                if(showLoader && !isSilentSync) { setTimeout(() => { loader.style.display = 'none'; }, 400); }
                 if(needRender || (showLoader && !isSilentSync)) initApp();
                 document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-check" style="color:#10b981;"></i> ซิงก์แล้ว';
                 
             } catch (err) {
                 clearInterval(interval);
+                clearTimeout(fallbackTimer);
                 if(showLoader && !isSilentSync) loader.style.display = 'none';
+                
                 if (patientsData.length === 0) loadMockData();
-                if(!isSilentSync) Swal.fire('ข้อมูลมีปัญหา', 'ระบบใช้ข้อมูลจำลองชั่วคราว กรุณาตรวจสอบลิงก์ Google Script', 'warning');
+                if(!isSilentSync) Swal.fire('ข้อมูลมีปัญหา', 'ระบบใช้ข้อมูลจำลองชั่วคราว กรุณาตรวจสอบอินเทอร์เน็ต', 'warning');
                 document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-xmark" style="color:#ef4444;"></i> ออฟไลน์';
             }
         }
 
         function loadMockData() {
-            patientsData = [ { bed:"01", an:"AN-0000", name:"(ตัวอย่าง) เชื่อมต่อไม่ได้", dx:"-", rec:"-", dtx:"-", hct:"-", film:"-", ds:"-", consult:"-", nebulizer1:"-", nebulizer2:"-", onedayStat:"-", hc2:"-", hc5:"-", lab:"-" } ];
+            patientsData = [ { bed:"01", an:"AN-0000", name:"(ตัวอย่าง) ไม่มีอินเทอร์เน็ต", dx:"-", rec:"-", dtx:"-", hct:"-", film:"-", ds:"-", consult:"-", nebulizer1:"-", nebulizer2:"-", onedayStat:"-", hc2:"-", hc5:"-", lab:"-" } ];
             patientsData.forEach(pt => {
                 if(!globalState[pt.bed]) globalState[pt.bed] = { text: '', canvas: null, stampCount: 0, photos: [], lastUpdate: 0, io:'', film:'', ds:'', consult:'', hc2:'', hc5:'', lab:'' };
             });
@@ -334,7 +327,7 @@
             handleStateChange(bed, 'text', currentText + (currentText ? '\n' : '') + `${label}: ${text}`);
         }
 
-        // --- ระบบกล้อง & แชร์ ---
+        // --- อัปโหลดภาพ & แชร์ ---
         async function handlePhotoUpload(bed, input) {
             const files = input.files;
             if(!globalState[bed].photos) globalState[bed].photos = [];
@@ -557,15 +550,23 @@
             const canvas = document.getElementById(canvasId);
             if (!canvas || canvas.getBoundingClientRect().width === 0) return;
             const ctx = canvas.getContext('2d');
-            canvas.width = canvas.getBoundingClientRect().width; canvas.height = canvas.getBoundingClientRect().height;
-
-            if (globalState[bed].canvas) {
-                const img = new Image(); img.onload = () => ctx.drawImage(img, 0, 0); img.src = globalState[bed].canvas;
-            }
+            
+            // ทำให้ Canvas กว้างเท่าขนาดจริงในจอ
+            const enforceSize = () => {
+                const rect = canvas.parentElement.getBoundingClientRect();
+                if(rect.width > 0 && canvas.width !== Math.floor(rect.width)) {
+                    canvas.width = rect.width; canvas.height = rect.height;
+                    if (globalState[bed].canvas) {
+                        const img = new Image(); img.onload = () => ctx.drawImage(img, 0, 0); img.src = globalState[bed].canvas;
+                    }
+                }
+            };
+            enforceSize();
 
             let isDrawing = false, startX, startY, snapshot;
             canvas.addEventListener('pointerdown', (e) => {
                 if (e.pointerType !== 'pen' && e.pointerType !== 'mouse') return;
+                enforceSize();
                 isDrawing = true; startX = e.offsetX; startY = e.offsetY;
                 snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 ctx.beginPath(); ctx.moveTo(startX, startY);
@@ -597,7 +598,7 @@
             Swal.fire({ title: 'ยืนยันลบกระดาน?', text: "เฉพาะรูปลายเส้นและแบบฟอร์มบนกระดานจะหายไป", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ลบทิ้ง', cancelButtonText: 'ยกเลิก' }).then((r) => {
                 if (r.isConfirmed) {
                     globalState[bed].canvas = null; globalState[bed].stampCount = 0; globalState[bed].lastUpdate = Date.now();
-                    document.querySelectorAll(`canvas[id$="-${bed}"]`).forEach(c => {if(c.getContext) c.getContext('2d').clearRect(0,0, c.width, c.height);});
+                    document.querySelectorAll(`canvas[id$="-${bed}"]`).forEach(c => {if(c.getContext) {c.getContext('2d').clearRect(0,0, c.width, c.height);}});
                     triggerCloudSync(); Swal.fire('ลบแล้ว!', '', 'success');
                 }
             });
@@ -608,6 +609,9 @@
             if(!activeCanvasId) return;
             const canvas = document.getElementById(activeCanvasId); const ctx = canvas.getContext('2d');
             const imgSize = 90; const padding = 10; let count = globalState[activeBed].stampCount || 0;
+            
+            if(canvas.width === 0) { const rect = canvas.parentElement.getBoundingClientRect(); canvas.width = rect.width; canvas.height = rect.height; }
+            
             const cols = Math.max(1, Math.floor(canvas.width / (imgSize + padding)));
             const x = (count % cols) * (imgSize + padding) + padding; const y = Math.floor(count / cols) * (imgSize + padding) + padding;
             
@@ -620,7 +624,7 @@
             img.src = anatomyImages[part];
         }
 
-        // --- ระบบบันทึกเวร & ประวัติ ---
+        // --- ระบบบันทึกประวัติ ---
         function openSaveModal() {
             Swal.fire({
                 title: 'บันทึกข้อมูลเวรลงระบบ', input: 'text', inputPlaceholder: 'กรอกชื่อพยาบาลเวร...',
@@ -657,12 +661,14 @@
 
         function restoreHistoryState(savedState) {
             if(!savedState) return;
-            Swal.fire({ title: 'เปิดประวัติเวร?', text: "ข้อมูลที่พิมพ์และวาดอยู่ปัจจุบันจะถูกล้างและแทนที่ด้วยข้อมูลชุดนี้", icon: 'warning', showCancelButton: true, confirmButtonColor: '#2563eb', confirmButtonText: 'ตกลง', cancelButtonText: 'ยกเลิก' }).then((r) => {
+            Swal.fire({ title: 'เปิดประวัติเวร?', text: "ข้อมูลปัจจุบันจะถูกแทนที่ด้วยข้อมูลจากประวัติ", icon: 'warning', showCancelButton: true, confirmButtonColor: '#2563eb', confirmButtonText: 'ตกลง', cancelButtonText: 'ยกเลิก' }).then((r) => {
                 if(r.isConfirmed) {
                     globalState = savedState; triggerCloudSync(); initApp(); switchView('worklist'); Swal.fire('สำเร็จ', 'โหลดข้อมูลประวัติเรียบร้อย', 'success');
                 }
             });
         }
+
+        window.onload = () => fetchDataFromServer(true, false);
     </script>
 </body>
 </html>
