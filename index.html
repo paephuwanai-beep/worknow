@@ -49,21 +49,27 @@
         .note-section { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
         .text-note { width: 100%; height: 60px; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit; font-size: 0.95rem; resize: vertical; }
         .canvas-wrapper { position: relative; background-color: #fafafa; background-image: linear-gradient(#f0f0f0 1px, transparent 1px), linear-gradient(90deg, #f0f0f0 1px, transparent 1px); background-size: 20px 20px; border: 1px solid var(--border-color); border-radius: 6px; }
-        canvas { display: block; width: 100%; height: 250px; touch-action: none; cursor: crosshair; }
+        canvas { display: block; width: 100%; height: 280px; touch-action: none; cursor: crosshair; }
 
         .input-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
         .input-group label { font-size: 0.85rem; font-weight: 600; color: var(--primary); }
         .input-group input { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-family: inherit; }
 
-        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; justify-content: center; gap: 30px; padding: 10px 0; z-index: 100; }
-        .nav-item { background: none; border: none; color: var(--text-muted); font-size: 0.9rem; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px 0; z-index: 100; }
+        .nav-item { background: none; border: none; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; }
         .nav-item.active { color: var(--primary); }
 
-        /* Anatomy Modal */
+        /* Anatomy & Views */
         .anatomy-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:200; align-items:center; justify-content:center; }
         .anatomy-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px; }
-        .anatomy-btn { border: 1px solid #ccc; border-radius: 8px; padding: 10px; cursor: pointer; text-align: center; }
+        .anatomy-btn { border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; cursor: pointer; text-align: center; }
         .anatomy-btn:hover { background: #f0f9ff; border-color: var(--primary); }
+        .history-table { width: 100%; border-collapse: collapse; }
+        .history-table th, .history-table td { padding: 12px; border-bottom: 1px solid var(--border-color); text-align: left; }
+        
+        .card-view-selector { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 15px; margin-bottom: 15px; }
+        .bed-pill { background: var(--bg-card); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 20px; cursor: pointer; white-space: nowrap; font-weight: 500; }
+        .bed-pill.active { background: var(--primary); color: #fff; border-color: var(--primary); }
     </style>
 </head>
 <body>
@@ -82,7 +88,6 @@
         <button class="tool-btn active" id="tool-pen" onclick="setTool('pen')"><i class="fa-solid fa-pen"></i></button>
         <button class="tool-btn" id="tool-highlighter" onclick="setTool('highlighter')"><i class="fa-solid fa-highlighter"></i></button>
         <button class="tool-btn" id="tool-eraser" onclick="setTool('eraser')"><i class="fa-solid fa-eraser"></i></button>
-        <button class="tool-btn" onclick="openAnatomyModal()" style="color:var(--primary);"><i class="fa-solid fa-child-reaching"></i></button>
         <div style="width: 1px; height: 15px; background: var(--border-color); margin: 0 5px;"></div>
         <div class="color-dot active" style="background:#2563eb;" onclick="setColor('#2563eb', this)"></div>
         <div class="color-dot" style="background:#dc2626;" onclick="setColor('#dc2626', this)"></div>
@@ -93,49 +98,72 @@
         <div id="loader" style="text-align:center; padding: 40px; color:var(--primary);">โหลดข้อมูล PTform...</div>
         
         <div id="view-worklist" style="display: none;"></div>
+        
+        <div id="view-workcard" style="display: none;">
+            <div class="card-view-selector" id="bed-pills"></div>
+            <div id="single-card-container"></div>
+        </div>
+
         <div id="view-neworder" style="display: none;"></div>
+        
+        <div id="view-history" style="display: none;">
+            <div class="patient-card">
+                <h3 style="color:var(--primary);"><i class="fa-solid fa-clock-rotate-left"></i> ประวัติบันทึกเวร</h3>
+                <div style="overflow-x: auto; margin-top: 15px;">
+                    <table class="history-table">
+                        <thead><tr><th>เวลา</th><th>ผู้บันทึก</th><th>ลบ</th></tr></thead>
+                        <tbody id="history-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <!-- แถบเมนู 4 เมนู -->
     <nav class="bottom-nav">
         <button class="nav-item active" id="nav-worklist" onclick="switchView('worklist')"><i class="fa-solid fa-list"></i> WORK list</button>
+        <button class="nav-item" id="nav-workcard" onclick="switchView('workcard')"><i class="fa-regular fa-address-card"></i> WORK card</button>
         <button class="nav-item" id="nav-neworder" onclick="switchView('neworder')"><i class="fa-solid fa-file-medical"></i> New Order</button>
+        <button class="nav-item" id="nav-history" onclick="switchView('history')"><i class="fa-solid fa-clock-rotate-left"></i> History</button>
     </nav>
 
-    <!-- Anatomy Selection Modal -->
+    <!-- Modal เลือกรูป Anatomy -->
     <div class="anatomy-modal" id="anatomy-modal">
         <div style="background:#fff; padding:25px; border-radius:8px; width:90%; max-width:400px;">
             <div style="display:flex; justify-content:space-between;">
-                <h3>เลือกการ์ตูน Anatomy</h3>
-                <button onclick="document.getElementById('anatomy-modal').style.display='none'" style="border:none; background:none; font-size:1.2rem;">&times;</button>
+                <h3 style="color:var(--primary);">เลือกรูป Anatomy</h3>
+                <button onclick="document.getElementById('anatomy-modal').style.display='none'" style="border:none; background:none; font-size:1.5rem; cursor:pointer;">&times;</button>
             </div>
             <div class="anatomy-grid">
                 <div class="anatomy-btn" onclick="stampAnatomy('body')">🧍‍♂️<br>Body</div>
                 <div class="anatomy-btn" onclick="stampAnatomy('head')">👤<br>Head</div>
-                <div class="anatomy-btn" onclick="stampAnatomy('hand')">🖐️<br>Hand</div>
                 <div class="anatomy-btn" onclick="stampAnatomy('arm')">💪<br>Arm</div>
                 <div class="anatomy-btn" onclick="stampAnatomy('leg')">🦵<br>Leg</div>
+                <div class="anatomy-btn" onclick="stampAnatomy('lungs')">🫁<br>Lungs</div>
                 <div class="anatomy-btn" onclick="stampAnatomy('abdomen')">🫃<br>Abdomen</div>
             </div>
         </div>
     </div>
 
     <script>
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbzp_7IVOVi3L6l466Q3bQKAD2yHD7laA-MqQ0166wbct66T522VU6XRPyl-S0QLCLRc/exec'; 
+        // *** วาง URL ใหม่ตรงนี้ ***
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbz9YA6oQLWeJGvweDMDBYqkdf3bU_FBeIQ-AU9DzoudMaWu7ZB_r00sccGnF396FzFJ/exec'; 
 
         let patientsData = [];
         let canvasDrawings = {}; 
         let currentTool = 'pen'; 
         let currentColor = '#2563eb'; 
-        let activeCanvasId = null; // เช็คว่ากำลังทำงานที่ Canvas ไหนเพื่อแสตมป์ Anatomy
+        let activeCanvasId = null;
+        let currentBedIndex = 0;
 
-        // ข้อมูลภาพ Anatomy แบบ Placeholder (สามารถเปลี่ยน URL เป็นภาพที่ต้องการได้)
+        // ฝังรูปภาพ SVG ลงในโค้ดโดยตรง (ไม่ต้องดึงจากเน็ต)
         const anatomyImages = {
-            body: 'https://cdn-icons-png.flaticon.com/512/1705/1705353.png',
-            head: 'https://cdn-icons-png.flaticon.com/512/2908/2908076.png',
-            hand: 'https://cdn-icons-png.flaticon.com/512/3050/3050516.png',
-            arm: 'https://cdn-icons-png.flaticon.com/512/3228/3228830.png',
-            leg: 'https://cdn-icons-png.flaticon.com/512/1531/1531062.png',
-            abdomen: 'https://cdn-icons-png.flaticon.com/512/3133/3133644.png'
+            body: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%23333" stroke-width="2"><circle cx="50" cy="15" r="8"/><path d="M30 35h40v40H30zM30 35l-15 20M70 35l15 20M40 75v20M60 75v20"/></svg>',
+            head: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%23333" stroke-width="2"><circle cx="50" cy="45" r="30"/><path d="M50 75v25M25 100h50"/></svg>',
+            arm: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%23333" stroke-width="2"><path d="M20 20c20 0 40 20 40 40s-20 40-40 40"/></svg>',
+            leg: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%23333" stroke-width="2"><path d="M40 10v60c0 10 20 10 20 0V10"/></svg>',
+            lungs: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%23333" stroke-width="2"><path d="M50 10v30M30 40c-15-10-20 10-10 30s25 20 25-10V40zM70 40c15-10 20 10 10 30s-25 20-25-10V40z"/></svg>',
+            abdomen: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%23333" stroke-width="2"><rect x="20" y="20" width="60" height="60" rx="15"/></svg>'
         };
 
         function setTool(tool) {
@@ -151,11 +179,18 @@
             if(currentTool === 'eraser') setTool('pen');
         }
 
+        // ระบบ 4 เมนู
         function switchView(viewName) {
             document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`nav-${viewName}`).classList.add('active');
+            
             document.getElementById('view-worklist').style.display = viewName === 'worklist' ? 'block' : 'none';
+            document.getElementById('view-workcard').style.display = viewName === 'workcard' ? 'block' : 'none';
             document.getElementById('view-neworder').style.display = viewName === 'neworder' ? 'block' : 'none';
+            document.getElementById('view-history').style.display = viewName === 'history' ? 'block' : 'none';
+
+            if (viewName === 'workcard') renderSingleCard(currentBedIndex);
+            if (viewName === 'history') loadHistory();
         }
 
         async function fetchPTform() {
@@ -163,18 +198,18 @@
                 const response = await fetch(GAS_URL);
                 patientsData = await response.json();
             } catch (err) {
-                // Mock data กรณีไม่ต่อเน็ต
                 patientsData = [
                     { bed:"01", an:"AN-1234", name:"นายเหลี่ยม เสาสิม", dx:"#Pneumonia", rec:"Dressing wound OD", dtx:"-", hct:"-", film:"-", ds:"18.00", consult:"-", nebulizer1:"BERODUAL 1 NB", nebulizer2:"-", onedayStat:"Soft diet", hc2:"-", hc5:"-", lab:"-" }
                 ];
             }
             document.getElementById('loader').style.display = 'none';
             document.getElementById('view-worklist').style.display = 'block';
+            
             renderWorkList();
             renderNewOrder();
+            buildCardPills();
         }
 
-        // ฟังก์ชันคลิกเพิ่มข้อความลง Note (Interactive)
         function appendToNote(bed, label, text) {
             if(text === '-' || text.trim() === '') return;
             const textarea = document.getElementById(`text-note-${bed}`);
@@ -234,8 +269,11 @@
                         
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
                             <label style="font-weight:600; font-size:0.9rem; color:var(--primary);"><i class="fa-solid fa-pen-clip"></i> วาดโน้ต (Apple Pencil)</label>
+                            <button class="btn-outline" style="color:var(--primary); border-color:var(--primary); font-size:0.8rem; padding:4px 8px;" onclick="prepareAnatomy('canvas-wl-${pt.bed}')">
+                                <i class="fa-solid fa-child-reaching"></i> แทรก Anatomy
+                            </button>
                         </div>
-                        <div class="canvas-wrapper" onclick="activeCanvasId='canvas-wl-${pt.bed}'">
+                        <div class="canvas-wrapper">
                             <canvas id="canvas-wl-${pt.bed}"></canvas>
                         </div>
                     </div>
@@ -243,6 +281,48 @@
                 container.appendChild(card);
                 setupCanvas(`canvas-wl-${pt.bed}`, `wl-${pt.bed}`);
             });
+        }
+
+        // ระบบ WORK card
+        function buildCardPills() {
+            const container = document.getElementById('bed-pills');
+            container.innerHTML = '';
+            patientsData.forEach((pt, index) => {
+                const pill = document.createElement('div');
+                pill.className = `bed-pill ${index === 0 ? 'active' : ''}`;
+                pill.innerText = `เตียง ${pt.bed}`;
+                pill.onclick = () => {
+                    document.querySelectorAll('.bed-pill').forEach(p => p.classList.remove('active'));
+                    pill.classList.add('active');
+                    currentBedIndex = index;
+                    renderSingleCard(index);
+                };
+                container.appendChild(pill);
+            });
+        }
+
+        function renderSingleCard(index) {
+            const pt = patientsData[index];
+            const container = document.getElementById('single-card-container');
+            container.innerHTML = `
+                <div class="patient-card">
+                    <div class="card-header">
+                        <span class="bed-badge">เตียง ${pt.bed}</span>
+                        <span style="font-size:1.25rem; font-weight:600;">${pt.name}</span>
+                    </div>
+                    ${createInfoGrid(pt)}
+                    <div class="note-section">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <label style="font-weight:600; font-size:0.9rem; color:var(--primary);">วาดโน้ต</label>
+                            <button class="btn-outline" style="color:var(--primary); border-color:var(--primary); font-size:0.8rem; padding:4px 8px;" onclick="prepareAnatomy('canvas-single')">
+                                <i class="fa-solid fa-child-reaching"></i> แทรก Anatomy
+                            </button>
+                        </div>
+                        <div class="canvas-wrapper"><canvas id="canvas-single"></canvas></div>
+                    </div>
+                </div>
+            `;
+            setupCanvas('canvas-single', `single-${pt.bed}`);
         }
 
         function renderNewOrder() {
@@ -262,8 +342,11 @@
                         <div class="input-group"><label>H/C2 & H/C5</label><input type="text"></div>
                         <div class="input-group"><label>LAB / Consult</label><input type="text" placeholder="เช่น ค้าง, ฝากตาม"></div>
                     </div>
-                    <div class="note-section" onclick="activeCanvasId='canvas-no-${pt.bed}'">
-                        <label style="font-weight:600; font-size:0.9rem; color:var(--primary);">Note เพิ่มเติม (พิมพ์/วาด/Anatomy)</label>
+                    <div class="note-section">
+                        <div style="display:flex; justify-content:space-between;">
+                            <label style="font-weight:600; font-size:0.9rem; color:var(--primary);">Note เพิ่มเติม</label>
+                            <button class="btn-outline" style="color:var(--primary); border-color:var(--primary); font-size:0.8rem; padding:4px 8px;" onclick="prepareAnatomy('canvas-no-${pt.bed}')">แทรก Anatomy</button>
+                        </div>
                         <textarea class="text-note" style="height:40px;"></textarea>
                         <div class="canvas-wrapper"><canvas id="canvas-no-${pt.bed}"></canvas></div>
                     </div>
@@ -273,7 +356,7 @@
             });
         }
 
-        // Setup Canvas & Drawing Engine
+        // ระบบวาดเขียน
         function setupCanvas(canvasId, storageKey) {
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
@@ -291,7 +374,6 @@
             let isDrawing = false;
             canvas.addEventListener('pointerdown', (e) => {
                 if (e.pointerType !== 'pen' && e.pointerType !== 'mouse') return;
-                activeCanvasId = canvasId; // อัปเดตโฟกัสสำหรับลงรูป Anatomy
                 isDrawing = true;
                 ctx.beginPath();
                 ctx.moveTo(e.offsetX, e.offsetY);
@@ -316,9 +398,9 @@
             canvas.addEventListener('pointerleave', stopDraw);
         }
 
-        // Anatomy Stamping System
-        function openAnatomyModal() {
-            if(!activeCanvasId) { alert('กรุณาแตะเลือกช่องวาดโน้ตที่ต้องการวางรูปก่อนครับ'); return; }
+        // ระบบ Anatomy ใหม่ (ปุ่มอยู่บนการ์ด ระบุเป้าหมายชัดเจน)
+        function prepareAnatomy(canvasId) {
+            activeCanvasId = canvasId;
             document.getElementById('anatomy-modal').style.display = 'flex';
         }
 
@@ -328,15 +410,33 @@
             const ctx = canvas.getContext('2d');
             
             const img = new Image();
-            // เมื่อโหลดภาพเสร็จ ให้วาดลงตรงกลาง Canvas แบบจางๆ (เป็น Template ให้วาดทับ)
             img.onload = () => {
-                ctx.globalAlpha = 0.3; // ทำภาพให้โปร่งแสงเพื่อวาดทับง่าย
+                ctx.globalAlpha = 0.5; // โปร่งแสง
+                // วาดรูปไว้ตรงกลางกระดาน
                 ctx.drawImage(img, (canvas.width/2)-60, (canvas.height/2)-60, 120, 120);
                 ctx.globalAlpha = 1.0;
                 document.getElementById('anatomy-modal').style.display = 'none';
             };
-            img.crossOrigin = "Anonymous";
             img.src = anatomyImages[part];
+        }
+
+        // ระบบ History
+        function loadHistory() {
+            const tbody = document.getElementById('history-list');
+            const hist = JSON.parse(localStorage.getItem('ipd3_hist') || '[]');
+            tbody.innerHTML = '';
+            hist.forEach(h => {
+                tbody.innerHTML += `<tr>
+                    <td>${h.time}</td>
+                    <td style="color:var(--primary); font-weight:500;">${h.nurse}</td>
+                    <td><button onclick="delHist(${h.id})" style="border:none;background:none;color:red;cursor:pointer;"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>`;
+            });
+        }
+        function delHist(id) {
+            let hist = JSON.parse(localStorage.getItem('ipd3_hist') || '[]');
+            localStorage.setItem('ipd3_hist', JSON.stringify(hist.filter(x => x.id !== id)));
+            loadHistory();
         }
 
         window.onload = fetchPTform;
