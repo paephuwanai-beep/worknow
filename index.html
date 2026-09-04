@@ -2,180 +2,850 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IPD Handover Note - PTform</title>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Handover IPD3</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-        body { 
-            font-family: 'Sarabun', sans-serif; 
-            background-color: #f0f2f5; 
-            padding: 20px; 
-            margin: 0;
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #1e293b 100%);
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass-card: rgba(255, 255, 255, 0.05);
+            --glass-blur: blur(20px);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --primary: #38bdf8;
+            --primary-glow: rgba(56, 189, 248, 0.3);
+            --accent: #818cf8;
+            --danger: #f87171;
+            --success: #34d399;
         }
-        h2 { text-align: center; color: #333; }
-        #loader { text-align: center; margin-top: 50px; font-size: 1.2em; color: #666; }
-        
-        .patient-card {
-            background: #fff;
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Sarabun', 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            padding-bottom: 90px;
+        }
+
+        /* Glassmorphism Header */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 12px 24px;
             display: flex;
-            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.3rem;
+            box-shadow: 0 4px 15px var(--primary-glow);
+        }
+
+        .brand-text h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-text p {
+            font-size: 0.75rem;
+            color: var(--primary);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .glass-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: var(--glass-blur);
+            color: var(--text-main);
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .glass-btn:hover, .glass-btn.active {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: var(--primary);
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        .glass-btn-primary {
+            background: linear-gradient(135deg, #0284c7, #4f46e5);
+            border: none;
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
+        }
+
+        /* Float Apple Pencil Floating Toolbar */
+        .pen-toolbar {
+            position: fixed;
+            top: 75px;
+            right: 20px;
+            z-index: 99;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 40px;
+            padding: 6px 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+
+        .tool-btn {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-size: 1.1rem;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+
+        .tool-btn.active {
+            color: #fff;
+            background: var(--glass-bg);
+            border: 1px solid var(--primary);
+            box-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        .color-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: 0.2s;
+        }
+
+        .color-dot.active {
+            transform: scale(1.2);
+            border-color: #fff;
+            box-shadow: 0 0 10px currentColor;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1280px;
+            margin: 20px auto;
+            padding: 0 16px;
+        }
+
+        /* Glass Cards */
+        .patient-card {
+            background: var(--glass-card);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .patient-card:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+
+        .bed-badge {
+            background: linear-gradient(135deg, #0ea5e9, #6366f1);
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 700;
+            padding: 6px 16px;
+            border-radius: 30px;
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
+        }
+
+        .patient-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #fff;
+            display: flex;
+            align-items: center;
             gap: 10px;
         }
-        .patient-header {
-            font-size: 1.1em;
-            font-weight: 600;
-            color: #0056b3;
-            border-bottom: 2px solid #e9ecef;
-            padding-bottom: 5px;
+
+        .hn-tag {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            background: rgba(255,255,255,0.06);
+            padding: 2px 8px;
+            border-radius: 6px;
         }
-        .patient-details {
-            font-size: 0.95em;
-            color: #444;
+
+        /* 13 Data Grid Layout */
+        .info-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 5px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
         }
-        
-        /* พื้นที่สำหรับจดโน้ตด้วย Apple Pencil */
-        .canvas-container {
+
+        .info-box {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 10px 14px;
+        }
+
+        .info-box.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .info-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--primary);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .info-val {
+            font-size: 0.95rem;
+            color: #e2e8f0;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        /* Note Drawing Canvas Container */
+        .canvas-wrapper {
             position: relative;
-            width: 100%;
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 14px;
+            overflow: hidden;
+            margin-top: 10px;
         }
+
+        .canvas-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+
         canvas {
-            border: 1.5px solid #dcdcdc;
-            border-radius: 8px;
+            display: block;
             width: 100%;
-            height: 250px;
-            background-color: #fafdfa;
-            touch-action: none; /* สำคัญมาก: ป้องกันไม่ให้หน้าจอดึงเลื่อนเวลาใช้ปากกาเขียน */
+            height: 220px;
+            background: transparent;
+            touch-action: none; /* Palm rejection & Apple Pencil only */
             cursor: crosshair;
         }
-        .clear-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: #ff4d4d;
-            color: white;
+
+        /* Bottom Tab Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            z-index: 100;
+        }
+
+        .nav-item {
+            background: none;
             border: none;
-            border-radius: 5px;
-            padding: 5px 10px;
-            font-size: 0.8em;
+            color: var(--text-dim);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.75rem;
             cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .nav-item i {
+            font-size: 1.25rem;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+            text-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        /* Single Bed Card View Selector */
+        .card-view-selector {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 10px 0 20px 0;
+            scrollbar-width: none;
+        }
+        .card-view-selector::-webkit-scrollbar { display: none; }
+
+        .bed-pill {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            padding: 8px 20px;
+            border-radius: 20px;
+            color: var(--text-main);
+            white-space: nowrap;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .bed-pill.active {
+            background: var(--primary);
+            color: #000;
+            font-weight: 700;
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        /* History Table & Modal */
+        .history-card {
+            background: var(--glass-card);
+            backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+        .modal-card {
+            background: #1e293b;
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 24px;
+            width: 90%;
+            max-width: 420px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+        .modal-card input {
+            width: 100%;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid var(--glass-border);
+            padding: 12px;
+            border-radius: 10px;
+            color: #fff;
+            font-family: inherit;
+            margin: 15px 0 20px 0;
+        }
+
+        #loader {
+            text-align: center;
+            padding: 60px 0;
+            color: var(--primary);
+            font-size: 1.2rem;
         }
     </style>
 </head>
 <body>
 
-    <h2>ใบรับเวร (อ้างอิงจาก PTform)</h2>
-    <div id="loader">กำลังโหลดข้อมูลผู้ป่วยจาก Google Sheets...</div>
-    <div id="patient-container"></div>
+    <header>
+        <div class="brand">
+            <div class="brand-logo"><i class="fa-solid fa-notes-medical"></i></div>
+            <div class="brand-text">
+                <h1>Handover IPD3</h1>
+                <p><i class="fa-solid fa-circle-check"></i> Connected to PTform</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="glass-btn glass-btn-primary" onclick="openSaveModal()">
+                <i class="fa-solid fa-floppy-disk"></i> บันทึกเวร
+            </button>
+        </div>
+    </header>
+
+    <div class="pen-toolbar">
+        <button class="tool-btn active" id="tool-pen" onclick="setTool('pen')" title="ปากกาลูกลื่น"><i class="fa-solid fa-pen"></i></button>
+        <button class="tool-btn" id="tool-highlighter" onclick="setTool('highlighter')" title="ปากกาไฮไลท์"><i class="fa-solid fa-highlighter"></i></button>
+        <button class="tool-btn" id="tool-pencil" onclick="setTool('pencil')" title="ดินสอ"><i class="fa-solid fa-pencil"></i></button>
+        <button class="tool-btn" id="tool-eraser" onclick="setTool('eraser')" title="ยางลบ"><i class="fa-solid fa-eraser"></i></button>
+        <div style="width: 1px; height: 20px; background: rgba(255,255,255,0.2); margin: 0 4px;"></div>
+        <div class="color-dot active" style="background:#38bdf8;" onclick="setColor('#38bdf8', this)"></div>
+        <div class="color-dot" style="background:#f87171;" onclick="setColor('#f87171', this)"></div>
+        <div class="color-dot" style="background:#34d399;" onclick="setColor('#34d399', this)"></div>
+        <div class="color-dot" style="background:#fbbf24;" onclick="setColor('#fbbf24', this)"></div>
+    </div>
+
+    <div class="container">
+        <div id="loader"><i class="fa-solid fa-spinner fa-spin"></i> กำลังโหลดข้อมูลผู้ป่วยจาก PTform...</div>
+
+        <div id="view-worklist" style="display: none;"></div>
+
+        <div id="view-workcard" style="display: none;">
+            <div class="card-view-selector" id="bed-pills"></div>
+            <div id="single-card-container"></div>
+        </div>
+
+        <div id="view-history" style="display: none;">
+            <h2 style="margin-bottom: 20px; font-size: 1.3rem;"><i class="fa-solid fa-clock-rotate-left"></i> ประวัติการบันทึกส่งเวร</h2>
+            <div id="history-list"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="save-modal">
+        <div class="modal-card">
+            <h3 style="color:#fff;"><i class="fa-solid fa-signature"></i> ลงชื่อบันทึกเวร</h3>
+            <p style="color:var(--text-dim); font-size: 0.85rem; margin-top: 6px;">บันทึกโน้ตลายมือและข้อมูลผู้ป่วยของเวรนี้</p>
+            <input type="text" id="nurse-name" placeholder="ชื่อพยาบาลผู้ส่งเวร..." autocomplete="off">
+            <div style="display:flex; justify-content: flex-end; gap: 10px;">
+                <button class="glass-btn" onclick="closeSaveModal()">ยกเลิก</button>
+                <button class="glass-btn glass-btn-primary" onclick="confirmSaveHandover()">ยืนยันบันทึก</button>
+            </div>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <button class="nav-item active" id="nav-worklist" onclick="switchView('worklist')">
+            <i class="fa-solid fa-list-check"></i>
+            <span>WORK list</span>
+        </button>
+        <button class="nav-item" id="nav-workcard" onclick="switchView('workcard')">
+            <i class="fa-solid fa-id-card"></i>
+            <span>WORK card</span>
+        </button>
+        <button class="nav-item" id="nav-history" onclick="switchView('history')">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span>History</span>
+        </button>
+    </nav>
 
     <script>
-        // *** นำ URL ของ Web App ที่ Deploy ไว้มาใส่ตรงนี้ ***
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbyYMVEe9dh_hosNGcLgU4LePj_fCGO-JqVBJK6hWhPSkqHBich5XfeEI6-lSYt2gWe_/exec';
+        // -------------------------------------------------------------
+        // *** นำ URL ที่ Deploy จาก Apps Script มาวางตรงนี้ ***
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxU-B-C9YeI1HvcKNFmRDpde8h0ki6J-DmYCSl43NlmWemgGAKD1Xo62cEKxqTQRn-o/exec'; 
+        // -------------------------------------------------------------
 
-        async function fetchPatients() {
+        let patientsData = [];
+        let currentBedIndex = 0;
+        let canvases = {}; // เก็บ context ของแต่ละ canvas
+        let canvasDrawings = {}; // เก็บ Base64 ของลายเส้นแต่ละเตียง
+
+        // Drawing Settings
+        let currentTool = 'pen'; // 'pen', 'highlighter', 'pencil', 'eraser'
+        let currentColor = '#38bdf8';
+        let currentSize = 2.5;
+
+        // Tool Selection
+        function setTool(tool) {
+            currentTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`tool-${tool}`).classList.add('active');
+        }
+
+        function setColor(color, elem) {
+            currentColor = color;
+            document.querySelectorAll('.color-dot').forEach(dot => dot.classList.remove('active'));
+            elem.classList.add('active');
+        }
+
+        // View Switching
+        function switchView(viewName) {
+            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`nav-${viewName}`).classList.add('active');
+
+            document.getElementById('view-worklist').style.display = viewName === 'worklist' ? 'block' : 'none';
+            document.getElementById('view-workcard').style.display = viewName === 'workcard' ? 'block' : 'none';
+            document.getElementById('view-history').style.display = viewName === 'history' ? 'block' : 'none';
+
+            if (viewName === 'workcard') renderSingleCard(currentBedIndex);
+            if (viewName === 'history') loadHistory();
+        }
+
+        // Load Data from Google Sheet
+        async function fetchPTform() {
             try {
                 const response = await fetch(GAS_URL);
-                const data = await response.json();
+                patientsData = await response.json();
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('view-worklist').style.display = 'block';
                 
-                const container = document.getElementById('patient-container');
-                const loader = document.getElementById('loader');
-                loader.style.display = 'none'; // ซ่อนข้อความกำลังโหลด
-                
-                data.forEach((pt, index) => {
-                    const card = document.createElement('div');
-                    card.className = 'patient-card';
-                    
-                    // จัดการข้อความว่าง
-                    const dx = pt.diagnosis ? pt.diagnosis : '-';
-                    const rec = pt.rec ? pt.rec : '-';
-                    const lab = pt.lab ? pt.lab : '-';
-                    
-                    card.innerHTML = `
-                        <div class="patient-header">
-                            เตียง ${pt.bed} | ${pt.name} (HN: ${pt.hn})
-                        </div>
-                        <div class="patient-details">
-                            <div><strong>Diagnosis:</strong> ${dx}</div>
-                            <div><strong>LAB:</strong> ${lab}</div>
-                            <div style="grid-column: span 2;"><strong>REC/Order:</strong> ${rec}</div>
-                        </div>
-                        <div class="canvas-container">
-                            <button class="clear-btn" onclick="clearCanvas('canvas-${index}')">ลบโน้ต</button>
-                            <canvas id="canvas-${index}"></canvas>
-                        </div>
-                    `;
-                    container.appendChild(card);
-                    
-                    // ตั้งค่า Canvas สำหรับการ์ดใบนี้
-                    setupCanvas(`canvas-${index}`);
-                });
-            } catch (error) {
-                document.getElementById('loader').innerText = 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
-                console.error("Error fetching data: ", error);
+                renderWorkList();
+                buildCardPills();
+            } catch (err) {
+                console.warn("ใช้ตัวอย่างข้อมูลจำลองจาก Sheet เนื่องจากทดสอบ Local");
+                // Dummy fallback based on PTform structure
+                patientsData = [
+                    { bed:"01", hn:"690003139", name:"นายเหลี่ยม เสาสิม", dx:"#Pneumonia", rec:"Dressing wound OD at 18.00 น.", consult:"-", xray:"-", ds:"18.00", film:"-", hc2:"-", hc5:"-", lab:"-", dtxHct:"-", nebulizer1:"BERODUAL 1 NB q 6 hr", nebulizer2:"-", onedayStat:"Soft diet" },
+                    { bed:"02", hn:"690003186", name:"นายสมยงค์ ริ่งไธสงค์", dx:"AGE c dehydration", rec:"Stool exam, UC", consult:"-", xray:"-", ds:"-", film:"-", hc2:"-", hc5:"-", lab:"Stool exam UC", dtxHct:"-", nebulizer1:"-", nebulizer2:"-", onedayStat:"Regular diet" },
+                    { bed:"03", hn:"690003197", name:"นายอชิตพล เรืองเจริญ", dx:"Sepsis R/o UTI #Subacute fever", rec:"I/O, Sputum G/S, UA tmr", consult:"melioid ตามผล", xray:"-", ds:"-", film:"-", hc2:"04/09 19:55", hc5:"07/09 19:55", lab:"Sputum G/S, UA tmr", dtxHct:"-", nebulizer1:"-", nebulizer2:"-", onedayStat:"Regular diet" },
+                    { bed:"พ.1", hn:"690003182", name:"พระถวิล เนียมสลุด", dx:"#COPD c AE", rec:"DTX premeal, hs 7,11,15,20", consult:"-", xray:"-", ds:"-", film:"-", hc2:"-", hc5:"-", lab:"sputum G/S", dtxHct:"DTX", nebulizer1:"BERODUAL NB q 4 hr", nebulizer2:"SALBUTAMOL NB q 4 hr", onedayStat:"DEXA 4 mg IV q 6 hr" }
+                ];
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('view-worklist').style.display = 'block';
+                renderWorkList();
+                buildCardPills();
             }
         }
 
-        function setupCanvas(canvasId) {
+        // Template for 13 fields
+        function createInfoGrid(pt) {
+            return `
+                <div class="info-grid">
+                    <div class="info-box full-width">
+                        <div class="info-label"><i class="fa-solid fa-stethoscope"></i> DIAGNOSIS</div>
+                        <div class="info-val" style="color: #67e8f9; font-weight: 600;">${pt.dx}</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-label"><i class="fa-solid fa-clipboard-list"></i> REC</div>
+                        <div class="info-val">${pt.rec}</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-label"><i class="fa-solid fa-droplet"></i> DTX / Hct</div>
+                        <div class="info-val">${pt.dtxHct}</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-label"><i class="fa-solid fa-x-ray"></i> X-RAY / Film</div>
+                        <div class="info-val">${pt.xray} / ${pt.film}</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-label"><i class="fa-solid fa-user-doctor"></i> Consult</div>
+                        <div class="info-val">${pt.consult}</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-label"><i class="fa-solid fa-lungs"></i> พ่นยา (1 & 2)</div>
+                        <div class="info-val">${pt.nebulizer1} ${pt.nebulizer2 !== '-' ? ' | ' + pt.nebulizer2 : ''}</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-label"><i class="fa-solid fa-bolt"></i> Oneday / STAT</div>
+                        <div class="info-val">${pt.onedayStat}</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-label"><i class="fa-solid fa-vial"></i> H/C2 & H/C5</div>
+                        <div class="info-val">H/C2: ${pt.hc2} | H/C5: ${pt.hc5}</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-label"><i class="fa-solid fa-flask"></i> LAB</div>
+                        <div class="info-val" style="color: #fcd34d;">${pt.lab}</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-label"><i class="fa-solid fa-calendar-check"></i> D/S</div>
+                        <div class="info-val">${pt.ds}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render WORK list View
+        function renderWorkList() {
+            const container = document.getElementById('view-worklist');
+            container.innerHTML = '';
+
+            patientsData.forEach((pt, index) => {
+                const card = document.createElement('div');
+                card.className = 'patient-card';
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div class="patient-name">
+                            <span class="bed-badge">เตียง ${pt.bed}</span>
+                            <span>${pt.name}</span>
+                            <span class="hn-tag">HN: ${pt.hn}</span>
+                        </div>
+                    </div>
+                    ${createInfoGrid(pt)}
+                    <div class="canvas-wrapper">
+                        <div class="canvas-header">
+                            <span><i class="fa-solid fa-signature"></i> ลายมือโน้ตรับเวร (Apple Pencil)</span>
+                            <button class="glass-btn" style="padding: 2px 8px; font-size:0.75rem;" onclick="clearCanvas('canvas-list-${index}', '${pt.bed}')">ลบ</button>
+                        </div>
+                        <canvas id="canvas-list-${index}"></canvas>
+                    </div>
+                `;
+                container.appendChild(card);
+                setupCanvas(`canvas-list-${index}`, pt.bed);
+            });
+        }
+
+        // Build Pills for WORK card view
+        function buildCardPills() {
+            const pillsContainer = document.getElementById('bed-pills');
+            pillsContainer.innerHTML = '';
+            patientsData.forEach((pt, index) => {
+                const pill = document.createElement('div');
+                pill.className = `bed-pill ${index === 0 ? 'active' : ''}`;
+                pill.innerText = `เตียง ${pt.bed}`;
+                pill.onclick = () => {
+                    document.querySelectorAll('.bed-pill').forEach(p => p.classList.remove('active'));
+                    pill.classList.add('active');
+                    currentBedIndex = index;
+                    renderSingleCard(index);
+                };
+                pillsContainer.appendChild(pill);
+            });
+        }
+
+        // Render Single Patient Card
+        function renderSingleCard(index) {
+            const pt = patientsData[index];
+            const container = document.getElementById('single-card-container');
+            container.innerHTML = `
+                <div class="patient-card">
+                    <div class="card-header">
+                        <div class="patient-name">
+                            <span class="bed-badge" style="font-size:1.3rem;">เตียง ${pt.bed}</span>
+                            <span style="font-size:1.4rem;">${pt.name}</span>
+                            <span class="hn-tag">HN: ${pt.hn}</span>
+                        </div>
+                    </div>
+                    ${createInfoGrid(pt)}
+                    <div class="canvas-wrapper">
+                        <div class="canvas-header">
+                            <span><i class="fa-solid fa-pencil"></i> โน้ตโฟกัสเฉพาะเตียง ${pt.bed}</span>
+                            <button class="glass-btn" style="padding: 2px 8px; font-size:0.75rem;" onclick="clearCanvas('canvas-single', '${pt.bed}')">ลบ</button>
+                        </div>
+                        <canvas id="canvas-single" style="height: 360px;"></canvas>
+                    </div>
+                </div>
+            `;
+            setupCanvas('canvas-single', pt.bed);
+        }
+
+        // Canvas & Apple Pencil Engine
+        function setupCanvas(canvasId, bedKey) {
             const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
             const ctx = canvas.getContext('2d');
-            
-            // ทำให้ขนาดของ canvas ตรงกับขนาดจริงที่แสดงผล ป้องกันเส้นเพี้ยน
+
+            // Set true resolution
             const rect = canvas.getBoundingClientRect();
             canvas.width = rect.width;
             canvas.height = rect.height;
 
+            // Load saved strokes if exist
+            if (canvasDrawings[bedKey]) {
+                const img = new Image();
+                img.onload = () => ctx.drawImage(img, 0, 0);
+                img.src = canvasDrawings[bedKey];
+            }
+
             let isDrawing = false;
 
-            ctx.lineWidth = 2.5;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.strokeStyle = '#004080'; // สีน้ำเงินเข้มสำหรับปากกา
+            const startDraw = (e) => {
+                // ป้องกันอุ้งมือ (Palm Rejection) รับเฉพาะ Apple Pencil (pen) หรือ Mouse คลิก
+                if (e.pointerType !== 'pen' && e.pointerType !== 'mouse') return;
+                
+                isDrawing = true;
+                ctx.beginPath();
+                ctx.moveTo(e.offsetX, e.offsetY);
 
-            // ใช้ pointerdown เพื่อให้รองรับ Apple Pencil ได้ดี
-            canvas.addEventListener('pointerdown', (e) => {
-                // อนุญาตให้เขียนเมื่อเป็น pen (Apple Pencil) หรือใช้เมาส์คลิกทดสอบ
-                if (e.pointerType === 'pen' || e.pointerType === 'mouse') {
-                    isDrawing = true;
-                    ctx.beginPath();
-                    ctx.moveTo(e.offsetX, e.offsetY);
-                    e.preventDefault();
+                // ตั้งค่ารูปแบบตามประเภทปากกา
+                if (currentTool === 'eraser') {
+                    ctx.globalCompositeOperation = 'destination-out';
+                    ctx.lineWidth = 20;
+                } else {
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.strokeStyle = currentColor;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+
+                    if (currentTool === 'highlighter') {
+                        ctx.strokeStyle = currentColor + '55'; // จางโปร่งแสง 33%
+                        ctx.lineWidth = 14;
+                    } else if (currentTool === 'pencil') {
+                        ctx.strokeStyle = currentColor + 'AA';
+                        ctx.lineWidth = 1.5;
+                    } else { // pen
+                        ctx.lineWidth = currentSize;
+                    }
                 }
-            });
+                e.preventDefault();
+            };
 
-            canvas.addEventListener('pointermove', (e) => {
+            const draw = (e) => {
                 if (!isDrawing) return;
                 ctx.lineTo(e.offsetX, e.offsetY);
                 ctx.stroke();
                 e.preventDefault();
-            });
+            };
 
-            const stopDrawing = () => {
+            const stopDraw = () => {
                 if (isDrawing) {
                     ctx.closePath();
                     isDrawing = false;
+                    // บันทึกลายเส้นไว้ใน Memory
+                    canvasDrawings[bedKey] = canvas.toDataURL();
                 }
             };
 
-            canvas.addEventListener('pointerup', stopDrawing);
-            canvas.addEventListener('pointerout', stopDrawing);
-            canvas.addEventListener('pointercancel', stopDrawing);
+            canvas.addEventListener('pointerdown', startDraw);
+            canvas.addEventListener('pointermove', draw);
+            canvas.addEventListener('pointerup', stopDraw);
+            canvas.addEventListener('pointerleave', stopDraw);
         }
 
-        // ฟังก์ชันสำหรับลบกระดาน
-        function clearCanvas(canvasId) {
+        function clearCanvas(canvasId, bedKey) {
             const canvas = document.getElementById(canvasId);
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            delete canvasDrawings[bedKey];
         }
 
-        // เรียกใช้งานเมื่อโหลดหน้าเว็บ
-        window.onload = fetchPatients;
+        // Save & History System
+        function openSaveModal() {
+            document.getElementById('save-modal').style.display = 'flex';
+        }
+
+        function closeSaveModal() {
+            document.getElementById('save-modal').style.display = 'none';
+        }
+
+        function confirmSaveHandover() {
+            const nurseName = document.getElementById('nurse-name').value.trim();
+            if (!nurseName) {
+                alert('กรุณากรอกชื่อผู้บันทึก');
+                return;
+            }
+
+            const record = {
+                id: Date.now(),
+                timestamp: new Date().toLocaleString('th-TH'),
+                nurse: nurseName,
+                patientsCount: patientsData.length,
+                drawings: { ...canvasDrawings }
+            };
+
+            let history = JSON.parse(localStorage.getItem('handover_ipd3_history') || '[]');
+            history.unshift(record);
+            localStorage.setItem('handover_ipd3_history', JSON.stringify(history));
+
+            closeSaveModal();
+            alert('บันทึกส่งเวรสำเร็จเรียบร้อยครับ!');
+            switchView('history');
+        }
+
+        function loadHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = '';
+            const history = JSON.parse(localStorage.getItem('handover_ipd3_history') || '[]');
+
+            if (history.length === 0) {
+                list.innerHTML = `<div style="color:var(--text-dim); text-align:center; padding:40px;">ไม่มีรายการประวัติที่บันทึกไว้</div>`;
+                return;
+            }
+
+            history.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'history-card';
+                div.innerHTML = `
+                    <div>
+                        <div style="font-weight: 700; font-size: 1.05rem; color: #fff;">
+                            <i class="fa-solid fa-user-nurse" style="color:var(--primary);"></i> ${item.nurse}
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 4px;">
+                            <i class="fa-solid fa-calendar-days"></i> ${item.timestamp} | ผู้ป่วย ${item.patientsCount} ราย
+                        </div>
+                    </div>
+                    <div style="display:flex; gap: 8px;">
+                        <button class="glass-btn" onclick="restoreHistory(${item.id})"><i class="fa-solid fa-pen-to-square"></i> แก้ไข/ดูต่อ</button>
+                        <button class="glass-btn" style="color:var(--danger);" onclick="deleteHistory(${item.id})"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function restoreHistory(id) {
+            const history = JSON.parse(localStorage.getItem('handover_ipd3_history') || '[]');
+            const record = history.find(h => h.id === id);
+            if (record) {
+                canvasDrawings = { ...record.drawings };
+                alert(`โหลดโน้ตของ ${record.nurse} (${record.timestamp}) กลับมาเรียบร้อยแล้วครับ`);
+                switchView('worklist');
+                renderWorkList();
+            }
+        }
+
+        function deleteHistory(id) {
+            if (!confirm('ต้องการลบประวัติเวรนี้ใช่หรือไม่?')) return;
+            let history = JSON.parse(localStorage.getItem('handover_ipd3_history') || '[]');
+            history = history.filter(h => h.id !== id);
+            localStorage.setItem('handover_ipd3_history', JSON.stringify(history));
+            loadHistory();
+        }
+
+        // Start
+        window.onload = fetchPTform;
     </script>
 </body>
 </html>
