@@ -4,371 +4,66 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Handover IPD3</title>
-    <!-- ใช้ฟอนต์ Sarabun เป็นหลักเพื่อความอ่านง่าย -->
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
         :root {
-            --bg-body: #f0f4f8; /* สีพื้นหลังหลัก เทาอมฟ้าอ่อนๆ */
-            --bg-card: #ffffff; /* สีพื้นหลังการ์ด ขาวล้วน */
-            --text-main: #1e293b; /* สีข้อความหลัก ดำเทา */
-            --text-muted: #64748b; /* สีข้อความรอง เทา */
-            --primary: #0f766e; /* สีเขียวอมฟ้าเข้ม (คล้ายภาพ 2) */
-            --primary-light: #ccfbf1;
-            --border-color: #e2e8f0; /* สีเส้นขอบ */
-            --accent: #2563eb; /* สีน้ำเงินสำหรับเน้น */
+            --bg-body: #f0f4f8;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --primary: #0f766e;
+            --border-color: #e2e8f0;
+            --accent: #2563eb;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            -webkit-tap-highlight-color: transparent;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Sarabun', sans-serif; background-color: var(--bg-body); color: var(--text-main); min-height: 100vh; padding-bottom: 90px; }
 
-        body {
-            font-family: 'Sarabun', sans-serif;
-            background-color: var(--bg-body);
-            color: var(--text-main);
-            min-height: 100vh;
-            padding-bottom: 90px;
-        }
+        header { background-color: #111827; padding: 15px 0; position: sticky; top: 0; z-index: 100; }
+        .header-content { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; }
+        .brand { background-color: var(--bg-card); padding: 8px 16px; border-radius: 8px; display: flex; align-items: center; gap: 10px; }
+        .brand-text { font-size: 1.2rem; font-weight: 700; color: var(--primary); }
+        .btn-outline { background: transparent; border: 1px solid #fff; color: #fff; padding: 8px 16px; border-radius: 6px; cursor: pointer; display: flex; gap: 6px; }
 
-        /* Header คล้ายภาพที่ 2 */
-        header {
-            background-color: #111827; /* สีดำเข้ม */
-            padding: 15px 0;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
+        .pen-toolbar { position: fixed; top: 80px; right: 20px; z-index: 99; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 30px; padding: 5px 12px; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        .tool-btn { background: none; border: none; color: var(--text-muted); font-size: 1.1rem; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; transition: 0.2s; }
+        .tool-btn.active { color: var(--accent); background: #eff6ff; }
+        .color-dot { width: 18px; height: 18px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
+        .color-dot.active { transform: scale(1.15); border-color: var(--text-main); }
 
-        .header-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 20px;
-        }
-
-        .brand {
-            background-color: var(--bg-card);
-            padding: 8px 16px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .brand-text {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--primary);
-        }
+        .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
+        .patient-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 24px; margin-bottom: 24px; }
+        .card-header { display: flex; align-items: center; gap: 15px; border-bottom: 2px solid var(--primary); padding-bottom: 12px; margin-bottom: 20px; }
+        .bed-badge { font-size: 1.2rem; font-weight: 700; color: var(--primary); }
         
-        .brand-subtext {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            border-left: 1px solid var(--border-color);
-            padding-left: 10px;
-        }
+        .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; margin-bottom: 20px; }
+        .info-item { padding: 12px; border-bottom: 1px dashed var(--border-color); border-right: 1px dashed var(--border-color); display: flex; flex-direction: column; gap: 4px; transition: 0.2s; cursor: pointer; }
+        .info-item:hover { background-color: #f0f9ff; }
+        .info-item:nth-child(even) { border-right: none; }
+        .info-item.full-width { grid-column: 1 / -1; border-right: none; }
+        .info-label { font-size: 0.85rem; font-weight: 600; color: var(--primary); }
+        .info-val { font-size: 1rem; color: var(--text-main); line-height: 1.5; pointer-events: none; }
 
-        .btn-outline {
-            background: transparent;
-            border: 1px solid #fff;
-            color: #fff;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-family: inherit;
-            cursor: pointer;
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .btn-outline:hover {
-            background: rgba(255,255,255,0.1);
-        }
+        .note-section { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+        .text-note { width: 100%; height: 60px; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit; font-size: 0.95rem; resize: vertical; }
+        .canvas-wrapper { position: relative; background-color: #fafafa; background-image: linear-gradient(#f0f0f0 1px, transparent 1px), linear-gradient(90deg, #f0f0f0 1px, transparent 1px); background-size: 20px 20px; border: 1px solid var(--border-color); border-radius: 6px; }
+        canvas { display: block; width: 100%; height: 250px; touch-action: none; cursor: crosshair; }
 
-        /* Floating Pen Toolbar (สไตล์สว่าง) */
-        .pen-toolbar {
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            z-index: 99;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 30px;
-            padding: 5px 12px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-        }
+        .input-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+        .input-group label { font-size: 0.85rem; font-weight: 600; color: var(--primary); }
+        .input-group input { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-family: inherit; }
 
-        .tool-btn {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            font-size: 1.1rem;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: 0.2s;
-        }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; justify-content: center; gap: 30px; padding: 10px 0; z-index: 100; }
+        .nav-item { background: none; border: none; color: var(--text-muted); font-size: 0.9rem; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .nav-item.active { color: var(--primary); }
 
-        .tool-btn.active {
-            color: var(--accent);
-            background: #eff6ff;
-        }
-
-        .color-dot {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            cursor: pointer;
-            border: 2px solid transparent;
-        }
-
-        .color-dot.active {
-            transform: scale(1.15);
-            border-color: var(--text-main);
-        }
-
-        /* Main Container */
-        .container {
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 0 20px;
-        }
-
-        /* Clean Card Style */
-        .patient-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 24px;
-            margin-bottom: 24px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-        }
-
-        .card-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            border-bottom: 2px solid var(--primary);
-            padding-bottom: 12px;
-            margin-bottom: 20px;
-        }
-
-        .bed-badge {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--primary);
-        }
-
-        .patient-name {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: var(--text-main);
-        }
-
-        .hn-tag {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-        }
-
-        /* Grid ข้อมูลแบบฟอร์มเอกสาร */
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr); /* แบ่ง 2 คอลัมน์หลัก */
-            gap: 0; /* ชิดกันแบบตาราง */
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            overflow: hidden;
-            margin-bottom: 20px;
-        }
-
-        .info-item {
-            padding: 12px;
-            border-bottom: 1px dashed var(--border-color);
-            border-right: 1px dashed var(--border-color);
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-        
-        .info-item:nth-child(even) {
-            border-right: none;
-        }
-        .info-item:nth-last-child(-n+2) {
-             border-bottom: none;
-        }
-
-        .info-item.full-width {
-            grid-column: 1 / -1;
-            border-right: none;
-        }
-
-        .info-label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--primary);
-        }
-
-        .info-val {
-            font-size: 1rem;
-            color: var(--text-main);
-            line-height: 1.5;
-        }
-
-        /* Canvas Note Area (กระดาษกราฟอ่อนๆ) */
-        .canvas-section {
-            margin-top: 20px;
-        }
-        
-        .canvas-title {
-            font-weight: 600;
-            color: var(--text-main);
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .canvas-wrapper {
-            position: relative;
-            background-color: #fafafa;
-            /* ลายกระดาษกราฟจางๆ */
-            background-image: 
-                linear-gradient(#f0f0f0 1px, transparent 1px),
-                linear-gradient(90deg, #f0f0f0 1px, transparent 1px);
-            background-size: 20px 20px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            overflow: hidden;
-        }
-
-        canvas {
-            display: block;
-            width: 100%;
-            height: 250px;
-            touch-action: none;
-            cursor: crosshair;
-        }
-
-        .btn-clear {
-            background: none;
-            border: 1px solid var(--border-color);
-            color: var(--text-muted);
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            cursor: pointer;
-        }
-        .btn-clear:hover {
-            background: #fee2e2;
-            color: #ef4444;
-            border-color: #ef4444;
-        }
-
-        /* Tabs Selection (Pills) */
-        .card-view-selector {
-            display: flex;
-            gap: 10px;
-            overflow-x: auto;
-            padding-bottom: 15px;
-            margin-bottom: 15px;
-            scrollbar-width: none;
-        }
-        .bed-pill {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            padding: 8px 16px;
-            border-radius: 20px;
-            color: var(--text-main);
-            cursor: pointer;
-            white-space: nowrap;
-            font-weight: 500;
-        }
-        .bed-pill.active {
-            background: var(--primary);
-            color: #fff;
-            border-color: var(--primary);
-        }
-
-        /* Bottom Nav (Tab Menu คล้ายภาพ 2) */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: var(--bg-card);
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            justify-content: center;
-            gap: 40px;
-            padding: 15px 0;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-            z-index: 100;
-        }
-
-        .nav-item {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
-            position: relative;
-        }
-        .nav-item::after {
-            content: '';
-            position: absolute;
-            bottom: -15px;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background: transparent;
-            transition: 0.2s;
-        }
-        .nav-item.active {
-            color: var(--primary);
-        }
-        .nav-item.active::after {
-            background: var(--primary);
-        }
-
-        /* History Table Style */
-        .history-table {
-            width: 100%;
-            background: var(--bg-card);
-            border-collapse: collapse;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        .history-table th, .history-table td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .history-table th {
-            background-color: #f8fafc;
-            color: var(--text-muted);
-            font-weight: 600;
-        }
+        /* Anatomy Modal */
+        .anatomy-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:200; align-items:center; justify-content:center; }
+        .anatomy-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px; }
+        .anatomy-btn { border: 1px solid #ccc; border-radius: 8px; padding: 10px; cursor: pointer; text-align: center; }
+        .anatomy-btn:hover { background: #f0f9ff; border-color: var(--primary); }
     </style>
 </head>
 <body>
@@ -378,11 +73,8 @@
             <div class="brand">
                 <i class="fa-solid fa-notes-medical" style="color:var(--primary);"></i>
                 <div class="brand-text">Handover IPD3</div>
-                <div class="brand-subtext">ระบบบันทึกส่งเวร หอผู้ป่วยชาย</div>
             </div>
-            <button class="btn-outline" onclick="openSaveModal()">
-                <i class="fa-regular fa-floppy-disk"></i> บันทึกเวร
-            </button>
+            <button class="btn-outline" onclick="openSaveModal()"><i class="fa-regular fa-floppy-disk"></i> บันทึกเวร</button>
         </div>
     </header>
 
@@ -390,82 +82,61 @@
         <button class="tool-btn active" id="tool-pen" onclick="setTool('pen')"><i class="fa-solid fa-pen"></i></button>
         <button class="tool-btn" id="tool-highlighter" onclick="setTool('highlighter')"><i class="fa-solid fa-highlighter"></i></button>
         <button class="tool-btn" id="tool-eraser" onclick="setTool('eraser')"><i class="fa-solid fa-eraser"></i></button>
+        <button class="tool-btn" onclick="openAnatomyModal()" style="color:var(--primary);"><i class="fa-solid fa-child-reaching"></i></button>
         <div style="width: 1px; height: 15px; background: var(--border-color); margin: 0 5px;"></div>
-        <!-- สีหลัก: น้ำเงิน, แดง, ดำ -->
         <div class="color-dot active" style="background:#2563eb;" onclick="setColor('#2563eb', this)"></div>
         <div class="color-dot" style="background:#dc2626;" onclick="setColor('#dc2626', this)"></div>
         <div class="color-dot" style="background:#1e293b;" onclick="setColor('#1e293b', this)"></div>
     </div>
 
     <div class="container">
-        <div id="loader" style="text-align:center; padding: 40px; color:var(--primary);">
-            <i class="fa-solid fa-circle-notch fa-spin"></i> โหลดข้อมูล PTform...
-        </div>
-
+        <div id="loader" style="text-align:center; padding: 40px; color:var(--primary);">โหลดข้อมูล PTform...</div>
+        
         <div id="view-worklist" style="display: none;"></div>
-
-        <div id="view-workcard" style="display: none;">
-            <div class="card-view-selector" id="bed-pills"></div>
-            <div id="single-card-container"></div>
-        </div>
-
-        <div id="view-history" style="display: none;">
-            <div class="patient-card">
-                <h3 style="margin-bottom: 15px; color:var(--primary);"><i class="fa-solid fa-clock-rotate-left"></i> ประวัติบันทึกเวร</h3>
-                <div style="overflow-x: auto;">
-                    <table class="history-table">
-                        <thead>
-                            <tr>
-                                <th>วัน-เวลา</th>
-                                <th>ผู้บันทึก (พยาบาลเวร)</th>
-                                <th>จำนวนผู้ป่วย</th>
-                                <th>จัดการ</th>
-                            </tr>
-                        </thead>
-                        <tbody id="history-list"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+        <div id="view-neworder" style="display: none;"></div>
     </div>
 
     <nav class="bottom-nav">
-        <button class="nav-item active" id="nav-worklist" onclick="switchView('worklist')">
-            <i class="fa-solid fa-list"></i> WORK list
-        </button>
-        <button class="nav-item" id="nav-workcard" onclick="switchView('workcard')">
-            <i class="fa-regular fa-address-card"></i> WORK card
-        </button>
-        <button class="nav-item" id="nav-history" onclick="switchView('history')">
-            <i class="fa-solid fa-clock-rotate-left"></i> History
-        </button>
+        <button class="nav-item active" id="nav-worklist" onclick="switchView('worklist')"><i class="fa-solid fa-list"></i> WORK list</button>
+        <button class="nav-item" id="nav-neworder" onclick="switchView('neworder')"><i class="fa-solid fa-file-medical"></i> New Order</button>
     </nav>
 
-    <!-- Modal Form คล้ายภาพที่ 2 -->
-    <div id="save-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:200; align-items:center; justify-content:center;">
+    <!-- Anatomy Selection Modal -->
+    <div class="anatomy-modal" id="anatomy-modal">
         <div style="background:#fff; padding:25px; border-radius:8px; width:90%; max-width:400px;">
-            <h3 style="margin-bottom:15px; color:var(--primary);">ยืนยันบันทึกส่งเวร</h3>
-            <div style="margin-bottom: 20px;">
-                <label style="display:block; font-size:0.9rem; margin-bottom:5px; color:var(--text-muted);">ชื่อพยาบาลเวร *</label>
-                <input type="text" id="nurse-name" style="width:100%; padding:10px; border:1px solid var(--border-color); border-radius:4px; font-family:inherit;">
+            <div style="display:flex; justify-content:space-between;">
+                <h3>เลือกการ์ตูน Anatomy</h3>
+                <button onclick="document.getElementById('anatomy-modal').style.display='none'" style="border:none; background:none; font-size:1.2rem;">&times;</button>
             </div>
-            <div style="display:flex; justify-content:flex-end; gap:10px;">
-                <button onclick="document.getElementById('save-modal').style.display='none'" style="padding:8px 16px; background:#f1f5f9; border:none; border-radius:4px; cursor:pointer;">ยกเลิก</button>
-                <button onclick="confirmSave()" style="padding:8px 16px; background:var(--primary); color:#fff; border:none; border-radius:4px; cursor:pointer;">บันทึกข้อมูล</button>
+            <div class="anatomy-grid">
+                <div class="anatomy-btn" onclick="stampAnatomy('body')">🧍‍♂️<br>Body</div>
+                <div class="anatomy-btn" onclick="stampAnatomy('head')">👤<br>Head</div>
+                <div class="anatomy-btn" onclick="stampAnatomy('hand')">🖐️<br>Hand</div>
+                <div class="anatomy-btn" onclick="stampAnatomy('arm')">💪<br>Arm</div>
+                <div class="anatomy-btn" onclick="stampAnatomy('leg')">🦵<br>Leg</div>
+                <div class="anatomy-btn" onclick="stampAnatomy('abdomen')">🫃<br>Abdomen</div>
             </div>
         </div>
     </div>
 
     <script>
-        // เปลี่ยน URL เป็นอันใหม่ที่ได้จาก GAS
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxU-B-C9YeI1HvcKNFmRDpde8h0ki6J-DmYCSl43NlmWemgGAKD1Xo62cEKxqTQRn-o/exec'; 
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbycVzOOwGby4xLZy-_T3XxT2zsQ_r7ypGCxhJt7LMUGWDbwEONd2xc54dXS-B5OWlA9/exec'; 
 
         let patientsData = [];
-        let currentBedIndex = 0;
         let canvasDrawings = {}; 
-        
         let currentTool = 'pen'; 
-        let currentColor = '#2563eb'; // Default สีน้ำเงิน
+        let currentColor = '#2563eb'; 
+        let activeCanvasId = null; // เช็คว่ากำลังทำงานที่ Canvas ไหนเพื่อแสตมป์ Anatomy
+
+        // ข้อมูลภาพ Anatomy แบบ Placeholder (สามารถเปลี่ยน URL เป็นภาพที่ต้องการได้)
+        const anatomyImages = {
+            body: 'https://cdn-icons-png.flaticon.com/512/1705/1705353.png',
+            head: 'https://cdn-icons-png.flaticon.com/512/2908/2908076.png',
+            hand: 'https://cdn-icons-png.flaticon.com/512/3050/3050516.png',
+            arm: 'https://cdn-icons-png.flaticon.com/512/3228/3228830.png',
+            leg: 'https://cdn-icons-png.flaticon.com/512/1531/1531062.png',
+            abdomen: 'https://cdn-icons-png.flaticon.com/512/3133/3133644.png'
+        };
 
         function setTool(tool) {
             currentTool = tool;
@@ -483,13 +154,8 @@
         function switchView(viewName) {
             document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`nav-${viewName}`).classList.add('active');
-
             document.getElementById('view-worklist').style.display = viewName === 'worklist' ? 'block' : 'none';
-            document.getElementById('view-workcard').style.display = viewName === 'workcard' ? 'block' : 'none';
-            document.getElementById('view-history').style.display = viewName === 'history' ? 'block' : 'none';
-
-            if (viewName === 'workcard') renderSingleCard(currentBedIndex);
-            if (viewName === 'history') loadHistory();
+            document.getElementById('view-neworder').style.display = viewName === 'neworder' ? 'block' : 'none';
         }
 
         async function fetchPTform() {
@@ -497,53 +163,53 @@
                 const response = await fetch(GAS_URL);
                 patientsData = await response.json();
             } catch (err) {
-                // ข้อมูลจำลองกรณีรันติดปัญหา
+                // Mock data กรณีไม่ต่อเน็ต
                 patientsData = [
-                    { bed:"01", hn:"690003139", name:"นายเหลี่ยม เสาสิม", dx:"#Pneumonia", rec:"Dressing wound OD at 18.00 น.", consult:"-", xray:"-", ds:"18.00", film:"-", hc2:"-", hc5:"-", lab:"-", dtxHct:"-", nebulizer1:"BERODUAL 1 NB q 6 hr", nebulizer2:"-", onedayStat:"Soft diet" },
-                    { bed:"02", hn:"690003186", name:"นายสมยงค์ ริ่งไธสงค์", dx:"AGE c dehydration", rec:"Stool exam, UC", consult:"-", xray:"-", ds:"-", film:"-", hc2:"-", hc5:"-", lab:"Stool exam UC", dtxHct:"-", nebulizer1:"-", nebulizer2:"-", onedayStat:"Regular diet" }
+                    { bed:"01", an:"AN-1234", name:"นายเหลี่ยม เสาสิม", dx:"#Pneumonia", rec:"Dressing wound OD", dtx:"-", hct:"-", film:"-", ds:"18.00", consult:"-", nebulizer1:"BERODUAL 1 NB", nebulizer2:"-", onedayStat:"Soft diet", hc2:"-", hc5:"-", lab:"-" }
                 ];
             }
-            
             document.getElementById('loader').style.display = 'none';
             document.getElementById('view-worklist').style.display = 'block';
             renderWorkList();
-            buildCardPills();
+            renderNewOrder();
+        }
+
+        // ฟังก์ชันคลิกเพิ่มข้อความลง Note (Interactive)
+        function appendToNote(bed, label, text) {
+            if(text === '-' || text.trim() === '') return;
+            const textarea = document.getElementById(`text-note-${bed}`);
+            if(textarea) {
+                textarea.value += `${label}: ${text}\n`;
+                textarea.scrollTop = textarea.scrollHeight;
+            }
         }
 
         function createInfoGrid(pt) {
             return `
                 <div class="info-grid">
-                    <div class="info-item full-width">
+                    <div class="info-item full-width" onclick="appendToNote('${pt.bed}', 'Dx', '${pt.dx}')">
                         <span class="info-label">การวินิจฉัย (DIAGNOSIS)</span>
-                        <span class="info-val" style="font-weight:600; color:#0369a1;">${pt.dx}</span>
+                        <span class="info-val" style="font-weight:600;">${pt.dx}</span>
                     </div>
-                    <div class="info-item">
+                    <div class="info-item" onclick="appendToNote('${pt.bed}', 'REC', '${pt.rec}')">
                         <span class="info-label">REC</span>
                         <span class="info-val">${pt.rec}</span>
                     </div>
-                    <div class="info-item">
+                    <div class="info-item" onclick="appendToNote('${pt.bed}', 'STAT', '${pt.onedayStat}')">
                         <span class="info-label">ONEDAY / STAT</span>
                         <span class="info-val">${pt.onedayStat}</span>
                     </div>
-                    <div class="info-item">
+                    <div class="info-item" onclick="appendToNote('${pt.bed}', 'พ่นยา', '${pt.nebulizer1} ${pt.nebulizer2}')">
                         <span class="info-label">พ่นยา (1 & 2)</span>
                         <span class="info-val">${pt.nebulizer1} ${pt.nebulizer2 !== '-' ? '| ' + pt.nebulizer2 : ''}</span>
                     </div>
-                    <div class="info-item">
-                        <span class="info-label">LAB / DTX / Hct</span>
-                        <span class="info-val">${pt.lab} | ${pt.dtxHct}</span>
+                    <div class="info-item" onclick="appendToNote('${pt.bed}', 'LAB', '${pt.lab}')">
+                        <span class="info-label">LAB</span>
+                        <span class="info-val">${pt.lab}</span>
                     </div>
-                    <div class="info-item">
-                        <span class="info-label">X-RAY / Film</span>
-                        <span class="info-val">${pt.xray} / ${pt.film}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">H/C2 & H/C5</span>
-                        <span class="info-val">${pt.hc2} | ${pt.hc5}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Consult / D/S</span>
-                        <span class="info-val">${pt.consult} | ${pt.ds}</span>
+                    <div class="info-item" onclick="appendToNote('${pt.bed}', 'DTX/Hct', '${pt.dtx} / ${pt.hct}')">
+                        <span class="info-label">DTX / Hct</span>
+                        <span class="info-val">${pt.dtx} / ${pt.hct}</span>
                     </div>
                 </div>
             `;
@@ -552,74 +218,63 @@
         function renderWorkList() {
             const container = document.getElementById('view-worklist');
             container.innerHTML = '';
-            patientsData.forEach((pt, index) => {
+            patientsData.forEach(pt => {
                 const card = document.createElement('div');
                 card.className = 'patient-card';
                 card.innerHTML = `
                     <div class="card-header">
                         <span class="bed-badge">เตียง ${pt.bed}</span>
-                        <span class="patient-name">${pt.name}</span>
-                        <span class="hn-tag">HN: ${pt.hn}</span>
+                        <span style="font-size:1.25rem; font-weight:600;">${pt.name}</span>
+                        <span style="font-size:0.9rem; color:var(--text-muted);">AN: ${pt.an}</span>
                     </div>
                     ${createInfoGrid(pt)}
-                    <div class="canvas-section">
-                        <div class="canvas-title">
-                            <span><i class="fa-solid fa-pen-clip"></i> โน้ต (Apple Pencil)</span>
-                            <button class="btn-clear" onclick="clearCanvas('canvas-list-${index}', '${pt.bed}')">ลบ</button>
+                    <div class="note-section">
+                        <label style="font-weight:600; font-size:0.9rem; color:var(--primary);"><i class="fa-solid fa-keyboard"></i> พิมพ์โน้ต (คลิกที่ข้อมูลเพื่อเพิ่มอัตโนมัติ)</label>
+                        <textarea id="text-note-${pt.bed}" class="text-note" placeholder="พิมพ์หรือกดเลือกข้อมูลด้านบน..."></textarea>
+                        
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                            <label style="font-weight:600; font-size:0.9rem; color:var(--primary);"><i class="fa-solid fa-pen-clip"></i> วาดโน้ต (Apple Pencil)</label>
                         </div>
-                        <div class="canvas-wrapper">
-                            <canvas id="canvas-list-${index}"></canvas>
+                        <div class="canvas-wrapper" onclick="activeCanvasId='canvas-wl-${pt.bed}'">
+                            <canvas id="canvas-wl-${pt.bed}"></canvas>
                         </div>
                     </div>
                 `;
                 container.appendChild(card);
-                setupCanvas(`canvas-list-${index}`, pt.bed);
+                setupCanvas(`canvas-wl-${pt.bed}`, `wl-${pt.bed}`);
             });
         }
 
-        function buildCardPills() {
-            const container = document.getElementById('bed-pills');
-            container.innerHTML = '';
-            patientsData.forEach((pt, index) => {
-                const pill = document.createElement('div');
-                pill.className = `bed-pill ${index === 0 ? 'active' : ''}`;
-                pill.innerText = `เตียง ${pt.bed}`;
-                pill.onclick = () => {
-                    document.querySelectorAll('.bed-pill').forEach(p => p.classList.remove('active'));
-                    pill.classList.add('active');
-                    currentBedIndex = index;
-                    renderSingleCard(index);
-                };
-                container.appendChild(pill);
+        function renderNewOrder() {
+            const container = document.getElementById('view-neworder');
+            container.innerHTML = '<h3 style="margin-bottom:15px; color:var(--primary);">New Order</h3>';
+            patientsData.forEach(pt => {
+                const card = document.createElement('div');
+                card.className = 'patient-card';
+                card.innerHTML = `
+                    <div class="card-header" style="border-bottom-color:#fbbf24;">
+                        <span class="bed-badge" style="color:#d97706;">เตียง ${pt.bed}</span>
+                        <span style="font-size:1.25rem; font-weight:600;">${pt.name}</span>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                        <div class="input-group"><label>I/O</label><input type="text" placeholder="เช่น 1000 ml"></div>
+                        <div class="input-group"><label>X-RAY / Film</label><input type="text"></div>
+                        <div class="input-group"><label>H/C2 & H/C5</label><input type="text"></div>
+                        <div class="input-group"><label>LAB / Consult</label><input type="text" placeholder="เช่น ค้าง, ฝากตาม"></div>
+                    </div>
+                    <div class="note-section" onclick="activeCanvasId='canvas-no-${pt.bed}'">
+                        <label style="font-weight:600; font-size:0.9rem; color:var(--primary);">Note เพิ่มเติม (พิมพ์/วาด/Anatomy)</label>
+                        <textarea class="text-note" style="height:40px;"></textarea>
+                        <div class="canvas-wrapper"><canvas id="canvas-no-${pt.bed}"></canvas></div>
+                    </div>
+                `;
+                container.appendChild(card);
+                setupCanvas(`canvas-no-${pt.bed}`, `no-${pt.bed}`);
             });
         }
 
-        function renderSingleCard(index) {
-            const pt = patientsData[index];
-            const container = document.getElementById('single-card-container');
-            container.innerHTML = `
-                <div class="patient-card">
-                    <div class="card-header">
-                        <span class="bed-badge" style="font-size:1.4rem;">เตียง ${pt.bed}</span>
-                        <span class="patient-name" style="font-size:1.4rem;">${pt.name}</span>
-                        <span class="hn-tag">HN: ${pt.hn}</span>
-                    </div>
-                    ${createInfoGrid(pt)}
-                    <div class="canvas-section">
-                        <div class="canvas-title">
-                            <span><i class="fa-solid fa-pen-clip"></i> โน้ตโฟกัสเตียง ${pt.bed}</span>
-                            <button class="btn-clear" onclick="clearCanvas('canvas-single', '${pt.bed}')">ลบ</button>
-                        </div>
-                        <div class="canvas-wrapper">
-                            <canvas id="canvas-single" style="height: 350px;"></canvas>
-                        </div>
-                    </div>
-                </div>
-            `;
-            setupCanvas('canvas-single', pt.bed);
-        }
-
-        function setupCanvas(canvasId, bedKey) {
+        // Setup Canvas & Drawing Engine
+        function setupCanvas(canvasId, storageKey) {
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
@@ -627,133 +282,61 @@
             canvas.width = rect.width;
             canvas.height = rect.height;
 
-            if (canvasDrawings[bedKey]) {
+            if (canvasDrawings[storageKey]) {
                 const img = new Image();
                 img.onload = () => ctx.drawImage(img, 0, 0);
-                img.src = canvasDrawings[bedKey];
+                img.src = canvasDrawings[storageKey];
             }
 
             let isDrawing = false;
-            const startDraw = (e) => {
+            canvas.addEventListener('pointerdown', (e) => {
                 if (e.pointerType !== 'pen' && e.pointerType !== 'mouse') return;
+                activeCanvasId = canvasId; // อัปเดตโฟกัสสำหรับลงรูป Anatomy
                 isDrawing = true;
                 ctx.beginPath();
                 ctx.moveTo(e.offsetX, e.offsetY);
-                
                 if (currentTool === 'eraser') {
-                    ctx.globalCompositeOperation = 'destination-out';
-                    ctx.lineWidth = 25;
+                    ctx.globalCompositeOperation = 'destination-out'; ctx.lineWidth = 25;
                 } else {
-                    ctx.globalCompositeOperation = 'source-over';
-                    ctx.lineCap = 'round';
-                    ctx.lineJoin = 'round';
-                    
-                    if (currentTool === 'highlighter') {
-                        ctx.strokeStyle = currentColor + '44'; 
-                        ctx.lineWidth = 18;
-                    } else { // pen
-                        ctx.strokeStyle = currentColor;
-                        ctx.lineWidth = 2;
-                    }
+                    ctx.globalCompositeOperation = 'source-over'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+                    ctx.strokeStyle = currentTool === 'highlighter' ? currentColor + '44' : currentColor;
+                    ctx.lineWidth = currentTool === 'highlighter' ? 18 : 2;
                 }
                 e.preventDefault();
-            };
+            });
 
-            const draw = (e) => {
+            canvas.addEventListener('pointermove', (e) => {
                 if (!isDrawing) return;
                 ctx.lineTo(e.offsetX, e.offsetY);
-                ctx.stroke();
-                e.preventDefault();
-            };
+                ctx.stroke(); e.preventDefault();
+            });
 
-            const stopDraw = () => {
-                if (isDrawing) {
-                    ctx.closePath();
-                    isDrawing = false;
-                    canvasDrawings[bedKey] = canvas.toDataURL();
-                }
-            };
-
-            canvas.addEventListener('pointerdown', startDraw);
-            canvas.addEventListener('pointermove', draw);
+            const stopDraw = () => { if (isDrawing) { ctx.closePath(); isDrawing = false; canvasDrawings[storageKey] = canvas.toDataURL(); } };
             canvas.addEventListener('pointerup', stopDraw);
             canvas.addEventListener('pointerleave', stopDraw);
         }
 
-        function clearCanvas(canvasId, bedKey) {
-            const canvas = document.getElementById(canvasId);
+        // Anatomy Stamping System
+        function openAnatomyModal() {
+            if(!activeCanvasId) { alert('กรุณาแตะเลือกช่องวาดโน้ตที่ต้องการวางรูปก่อนครับ'); return; }
+            document.getElementById('anatomy-modal').style.display = 'flex';
+        }
+
+        function stampAnatomy(part) {
+            if(!activeCanvasId) return;
+            const canvas = document.getElementById(activeCanvasId);
             const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            delete canvasDrawings[bedKey];
-        }
-
-        // ระบบบันทึก
-        function openSaveModal() {
-            document.getElementById('save-modal').style.display = 'flex';
-        }
-
-        function confirmSave() {
-            const name = document.getElementById('nurse-name').value.trim();
-            if(!name) { alert('กรุณากรอกชื่อ'); return; }
             
-            const record = {
-                id: Date.now(),
-                time: new Date().toLocaleString('th-TH'),
-                nurse: name,
-                count: patientsData.length,
-                drawings: { ...canvasDrawings }
+            const img = new Image();
+            // เมื่อโหลดภาพเสร็จ ให้วาดลงตรงกลาง Canvas แบบจางๆ (เป็น Template ให้วาดทับ)
+            img.onload = () => {
+                ctx.globalAlpha = 0.3; // ทำภาพให้โปร่งแสงเพื่อวาดทับง่าย
+                ctx.drawImage(img, (canvas.width/2)-60, (canvas.height/2)-60, 120, 120);
+                ctx.globalAlpha = 1.0;
+                document.getElementById('anatomy-modal').style.display = 'none';
             };
-            
-            let hist = JSON.parse(localStorage.getItem('ipd3_hist') || '[]');
-            hist.unshift(record);
-            localStorage.setItem('ipd3_hist', JSON.stringify(hist));
-            
-            document.getElementById('save-modal').style.display = 'none';
-            document.getElementById('nurse-name').value = '';
-            switchView('history');
-        }
-
-        function loadHistory() {
-            const tbody = document.getElementById('history-list');
-            const hist = JSON.parse(localStorage.getItem('ipd3_hist') || '[]');
-            tbody.innerHTML = '';
-            
-            if(hist.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px;">ยังไม่มีประวัติ</td></tr>`;
-                return;
-            }
-            
-            hist.forEach(h => {
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${h.time}</td>
-                        <td style="color:var(--primary); font-weight:500;">${h.nurse}</td>
-                        <td>${h.count} ราย</td>
-                        <td>
-                            <button onclick="restoreHist(${h.id})" style="background:none; border:none; color:var(--accent); cursor:pointer; margin-right:10px;"><i class="fa-solid fa-folder-open"></i> เปิด</button>
-                            <button onclick="delHist(${h.id})" style="background:none; border:none; color:#ef4444; cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-        
-        function restoreHist(id) {
-            const hist = JSON.parse(localStorage.getItem('ipd3_hist') || '[]');
-            const rec = hist.find(x => x.id === id);
-            if(rec) {
-                canvasDrawings = { ...rec.drawings };
-                switchView('worklist');
-                renderWorkList();
-            }
-        }
-
-        function delHist(id) {
-            if(!confirm('ลบประวัตินี้?')) return;
-            let hist = JSON.parse(localStorage.getItem('ipd3_hist') || '[]');
-            hist = hist.filter(x => x.id !== id);
-            localStorage.setItem('ipd3_hist', JSON.stringify(hist));
-            loadHistory();
+            img.crossOrigin = "Anonymous";
+            img.src = anatomyImages[part];
         }
 
         window.onload = fetchPTform;
