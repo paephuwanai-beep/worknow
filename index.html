@@ -6,6 +6,8 @@
     <title>Handover IPD3</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- นำเข้า SweetAlert2 สำหรับ Pop-up สวยๆ -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
         :root {
@@ -15,28 +17,36 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Sarabun', sans-serif; background-color: var(--bg-body); color: var(--text-main); min-height: 100vh; padding-bottom: 90px; }
+        body { font-family: 'Sarabun', sans-serif; background-color: var(--bg-body); color: var(--text-main); min-height: 100vh; padding-bottom: 90px; overflow-x: hidden;}
+
+        /* Loading Screen */
+        #loading-screen {
+            position: fixed; inset: 0; background: #fff; z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .progress-container { width: 80%; max-width: 400px; height: 10px; background: #e2e8f0; border-radius: 10px; margin-top: 20px; overflow: hidden; }
+        .progress-bar { height: 100%; width: 0%; background: var(--primary); transition: width 0.3s ease; }
+        .loading-text { margin-top: 15px; font-weight: 600; color: var(--primary); font-size: 1.1rem; }
 
         header { background-color: #111827; padding: 15px 0; position: sticky; top: 0; z-index: 100; }
         .header-content { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; }
         .brand { background-color: var(--bg-card); padding: 8px 16px; border-radius: 8px; display: flex; align-items: center; gap: 10px; }
         .brand-text { font-size: 1.2rem; font-weight: 700; color: var(--primary); display: flex; align-items: center;}
-        
         .patient-count-badge { font-size: 0.8rem; background: var(--accent); color: #fff; padding: 2px 10px; border-radius: 12px; margin-left: 10px; font-weight: 500; }
         .btn-outline { background: transparent; border: 1px solid #fff; color: #fff; padding: 8px 16px; border-radius: 6px; cursor: pointer; display: flex; gap: 6px; align-items: center; }
 
-        /* Draggable Toolbar */
+        /* Toolbar แบบ Fix อยู่กับที่ */
         .pen-toolbar { 
-            position: fixed; top: 80px; right: 20px; z-index: 150; background: var(--bg-card); 
-            border: 1px solid var(--border-color); border-radius: 30px; padding: 5px 12px; 
-            display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
-            cursor: move; touch-action: none;
+            position: sticky; top: 68px; z-index: 90; background: var(--bg-card); 
+            border-bottom: 1px solid var(--border-color); padding: 8px 20px; 
+            display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
-        .drag-handle { color: #ccc; margin-right: 5px; cursor: move; }
-        .tool-btn { background: none; border: none; color: var(--text-muted); font-size: 1.1rem; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; transition: 0.2s; pointer-events: auto;}
-        .tool-btn.active { color: var(--accent); background: #eff6ff; }
-        .color-dot { width: 18px; height: 18px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; pointer-events: auto;}
+        .tool-btn { background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 1.1rem; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        .tool-btn.active { color: var(--accent); background: #eff6ff; border-color: #bfdbfe; }
+        .color-dot { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
         .color-dot.active { transform: scale(1.15); border-color: var(--text-main); }
+        .size-slider { width: 100px; cursor: pointer; }
 
         .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
         .patient-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
@@ -44,7 +54,7 @@
         .bed-badge { font-size: 1.2rem; font-weight: 700; color: var(--primary); }
         
         .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; margin-bottom: 20px; }
-        .info-item { padding: 12px; border-bottom: 1px dashed var(--border-color); border-right: 1px dashed var(--border-color); display: flex; flex-direction: column; gap: 4px; cursor: pointer; }
+        .info-item { padding: 12px; border-bottom: 1px dashed var(--border-color); border-right: 1px dashed var(--border-color); display: flex; flex-direction: column; gap: 4px; cursor: pointer; transition: 0.2s;}
         .info-item:hover { background-color: #f0f9ff; }
         .info-item:nth-child(even) { border-right: none; }
         .info-item.full-width { grid-column: 1 / -1; border-right: none; }
@@ -54,87 +64,128 @@
         .note-section { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
         .text-note { width: 100%; height: 60px; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit; font-size: 0.95rem; resize: vertical; }
         
-        .canvas-wrapper { position: relative; background-color: #fafafa; background-image: linear-gradient(#f0f0f0 1px, transparent 1px), linear-gradient(90deg, #f0f0f0 1px, transparent 1px); background-size: 20px 20px; border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; height: 300px; }
-        canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: crosshair; position: absolute; top:0; left:0; z-index: 1; }
-        
-        /* Anatomy Elements */
-        .anatomy-layer { position: absolute; top:0; left:0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
-        .anatomy-item { 
-            position: absolute; width: 120px; height: 120px; border: 1px dashed transparent; 
-            pointer-events: auto; resize: both; overflow: hidden; touch-action: none; 
-            display: flex; align-items: center; justify-content: center;
-        }
-        .anatomy-item:active { border-color: var(--primary); background: rgba(15, 118, 110, 0.05); z-index: 10; }
-        .anatomy-item img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; opacity: 0.7;}
-        .drag-bar { position: absolute; top: 0; left: 0; width: 100%; height: 20px; background: transparent; cursor: move; }
+        .canvas-wrapper { position: relative; background-color: #fafafa; background-image: linear-gradient(#f0f0f0 1px, transparent 1px), linear-gradient(90deg, #f0f0f0 1px, transparent 1px); background-size: 20px 20px; border: 1px solid var(--border-color); border-radius: 6px; height: 300px; overflow: hidden; }
+        canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
 
         .input-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
         .input-group label { font-size: 0.85rem; font-weight: 600; color: var(--primary); }
-        .input-group input { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-family: inherit; font-size: 0.95rem; color: var(--text-main); }
-        .input-group.full-width { grid-column: 1 / -1; }
+        .input-group input { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-family: inherit; font-size: 0.95rem; }
+
+        /* New Order Table View */
+        .order-table-wrapper { overflow-x: auto; background: #fff; border: 1px solid var(--border-color); border-radius: 8px; }
+        .order-table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        .order-table th, .order-table td { padding: 10px; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); font-size: 0.9rem;}
+        .order-table th { background: #f8fafc; color: var(--primary); font-weight: 600; white-space: nowrap; }
+        .order-table input, .order-table textarea { width: 100%; border: none; background: transparent; font-family: inherit; outline: none; resize: vertical;}
+        .order-table textarea { min-height: 40px; }
+        .order-table input:focus, .order-table textarea:focus { background: #f0f9ff; }
 
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px 0; z-index: 200; }
         .nav-item { background: none; border: none; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; }
         .nav-item.active { color: var(--primary); }
 
-        .anatomy-modal, #save-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:300; align-items:center; justify-content:center; }
+        .anatomy-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:300; align-items:center; justify-content:center; }
         .anatomy-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px; }
         .anatomy-btn { border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; cursor: pointer; text-align: center; font-size: 0.9rem; font-weight: 600;}
         
         .card-view-selector { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 15px; margin-bottom: 15px; }
         .bed-pill { background: var(--bg-card); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 20px; cursor: pointer; white-space: nowrap; font-weight: 500; }
         .bed-pill.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-        
-        .history-table { width: 100%; border-collapse: collapse; }
-        .history-table th, .history-table td { padding: 12px; border-bottom: 1px solid var(--border-color); text-align: left; }
     </style>
 </head>
 <body>
+
+    <!-- หน้าจอโหลดดิ้ง -->
+    <div id="loading-screen">
+        <i class="fa-solid fa-notes-medical" style="font-size: 3rem; color: var(--primary);"></i>
+        <div class="loading-text">กำลังโหลดข้อมูลผู้ป่วย <span id="load-percent">0%</span></div>
+        <div class="progress-container">
+            <div class="progress-bar" id="load-bar"></div>
+        </div>
+    </div>
 
     <header>
         <div class="header-content">
             <div class="brand">
                 <i class="fa-solid fa-notes-medical" style="color:var(--primary);"></i>
-                <div class="brand-text">
-                    Handover IPD3 
-                    <span id="patient-count" class="patient-count-badge"><i class="fa-solid fa-spinner fa-spin"></i></span>
-                </div>
+                <div class="brand-text">Handover IPD3 <span id="patient-count" class="patient-count-badge">0 ราย</span></div>
             </div>
             <div style="display:flex; gap:10px;">
-                <button class="btn-outline" style="border-color:#94a3b8; color:#cbd5e1;" onclick="fetchDataFromServer(true)"><i class="fa-solid fa-rotate-right"></i></button>
+                <button class="btn-outline" style="border-color:#94a3b8; color:#cbd5e1;" onclick="fetchDataFromServer(true)" title="รีเฟรชข้อมูล"><i class="fa-solid fa-rotate-right"></i></button>
                 <button class="btn-outline" onclick="openSaveModal()"><i class="fa-regular fa-floppy-disk"></i> บันทึกเวร</button>
             </div>
         </div>
     </header>
 
-    <div class="pen-toolbar" id="draggable-toolbar">
-        <i class="fa-solid fa-grip-vertical drag-handle"></i>
-        <button class="tool-btn active" id="tool-pen" onclick="setTool('pen')" ontouchstart="setTool('pen')"><i class="fa-solid fa-pen"></i></button>
-        <button class="tool-btn" id="tool-highlighter" onclick="setTool('highlighter')" ontouchstart="setTool('highlighter')"><i class="fa-solid fa-highlighter"></i></button>
-        <button class="tool-btn" id="tool-eraser" onclick="setTool('eraser')" ontouchstart="setTool('eraser')"><i class="fa-solid fa-eraser"></i></button>
-        <div style="width: 1px; height: 15px; background: var(--border-color); margin: 0 5px;"></div>
-        <div class="color-dot active" style="background:#2563eb;" onclick="setColor('#2563eb', this)" ontouchstart="setColor('#2563eb', this)"></div>
-        <div class="color-dot" style="background:#dc2626;" onclick="setColor('#dc2626', this)" ontouchstart="setColor('#dc2626', this)"></div>
-        <div class="color-dot" style="background:#1e293b;" onclick="setColor('#1e293b', this)" ontouchstart="setColor('#1e293b', this)"></div>
+    <!-- Toolbar วาดรูปครบฟังก์ชัน -->
+    <div class="pen-toolbar">
+        <button class="tool-btn active" id="tool-pen" onclick="setTool('pen')" title="ปากกา"><i class="fa-solid fa-pen"></i></button>
+        <button class="tool-btn" id="tool-highlighter" onclick="setTool('highlighter')" title="ไฮไลท์"><i class="fa-solid fa-highlighter"></i></button>
+        <button class="tool-btn" id="tool-eraser" onclick="setTool('eraser')" title="ยางลบ"><i class="fa-solid fa-eraser"></i></button>
+        <div style="width: 1px; height: 20px; background: var(--border-color); margin: 0 5px;"></div>
+        
+        <!-- รูปทรง -->
+        <button class="tool-btn" id="tool-line" onclick="setTool('line')" title="เส้นตรง"><i class="fa-solid fa-minus"></i></button>
+        <button class="tool-btn" id="tool-rect" onclick="setTool('rect')" title="สี่เหลี่ยม"><i class="fa-regular fa-square"></i></button>
+        <button class="tool-btn" id="tool-circle" onclick="setTool('circle')" title="วงกลม"><i class="fa-regular fa-circle"></i></button>
+        
+        <!-- ระบายสี (Fill Shape) -->
+        <button class="tool-btn" id="tool-fill" onclick="toggleFill()" title="ระบายสีทึบ"><i class="fa-solid fa-fill-drip"></i></button>
+        
+        <div style="width: 1px; height: 20px; background: var(--border-color); margin: 0 5px;"></div>
+        
+        <!-- สี -->
+        <div class="color-dot active" style="background:#2563eb;" onclick="setColor('#2563eb', this)"></div>
+        <div class="color-dot" style="background:#dc2626;" onclick="setColor('#dc2626', this)"></div>
+        <div class="color-dot" style="background:#16a34a;" onclick="setColor('#16a34a', this)"></div>
+        <div class="color-dot" style="background:#1e293b;" onclick="setColor('#1e293b', this)"></div>
+        
+        <div style="width: 1px; height: 20px; background: var(--border-color); margin: 0 5px;"></div>
+        <!-- ขนาด -->
+        <input type="range" id="pen-size" class="size-slider" min="1" max="20" value="2" onchange="updateSize(this.value)">
     </div>
 
     <div class="container">
-        <div id="loader" style="text-align:center; padding: 40px; color:var(--primary); display:none;">
-            <i class="fa-solid fa-circle-notch fa-spin"></i> กำลังซิงค์ข้อมูล...
-        </div>
-        
+        <!-- View: WORK list -->
         <div id="view-worklist"></div>
+        
+        <!-- View: WORK card -->
         <div id="view-workcard" style="display: none;">
             <div class="card-view-selector" id="bed-pills"></div>
             <div id="single-card-container"></div>
         </div>
-        <div id="view-neworder" style="display: none;"></div>
+        
+        <!-- View: New Order -->
+        <div id="view-neworder" style="display: none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">
+                <h3 style="color:var(--primary);">รายการ New Order</h3>
+                <button class="btn-outline" style="background:var(--primary); font-size:0.8rem;" onclick="toggleNewOrderView()">
+                    <i class="fa-solid fa-table"></i> สลับมุมมอง (ตาราง/การ์ด)
+                </button>
+            </div>
+            
+            <!-- แบบการ์ด (ดั้งเดิม) -->
+            <div id="neworder-cards-view"></div>
+            
+            <!-- แบบตาราง (ใหม่) -->
+            <div id="neworder-table-view" class="order-table-wrapper" style="display:none;">
+                <table class="order-table">
+                    <thead>
+                        <tr>
+                            <th>เตียง</th><th>ชื่อ-สกุล</th><th>I/O (REC)</th><th>Film</th><th>D/S</th><th>Consult</th><th>H/C2 & H/C5</th><th>LAB</th><th>Note (พิมพ์)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="neworder-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- View: History -->
         <div id="view-history" style="display: none;">
             <div class="patient-card">
-                <h3 style="color:var(--primary);"><i class="fa-solid fa-cloud-arrow-down"></i> ประวัติบันทึกเวร (Cloud Sync)</h3>
-                <button class="btn-outline" style="background:var(--primary); margin-top:10px;" onclick="loadCloudHistory()"><i class="fa-solid fa-rotate"></i> โหลดประวัติล่าสุด</button>
+                <h3 style="color:var(--primary);"><i class="fa-solid fa-clock-rotate-left"></i> ประวัติบันทึกเวร</h3>
                 <div style="overflow-x: auto; margin-top: 15px;">
-                    <table class="history-table">
+                    <table class="order-table">
                         <thead><tr><th>เวลา</th><th>พยาบาลเวร</th><th>จำนวนเตียง</th><th>จัดการ</th></tr></thead>
                         <tbody id="history-list"></tbody>
                     </table>
@@ -154,31 +205,16 @@
     <div class="anatomy-modal" id="anatomy-modal">
         <div style="background:#fff; padding:25px; border-radius:8px; width:90%; max-width:400px;">
             <div style="display:flex; justify-content:space-between;">
-                <h3 style="color:var(--primary);">แทรกรูป Anatomy (ย่อขยาย/เลื่อนได้)</h3>
+                <h3 style="color:var(--primary);">แทรกรูป Anatomy</h3>
                 <button onclick="document.getElementById('anatomy-modal').style.display='none'" style="border:none; background:none; font-size:1.5rem; cursor:pointer;">&times;</button>
             </div>
             <div class="anatomy-grid">
-                <div class="anatomy-btn" onclick="addAnatomyDOM('body')">🧍‍♂️<br>Body</div>
-                <div class="anatomy-btn" onclick="addAnatomyDOM('head')">👤<br>Head</div>
-                <div class="anatomy-btn" onclick="addAnatomyDOM('arm')">💪<br>Arm</div>
-                <div class="anatomy-btn" onclick="addAnatomyDOM('leg')">🦵<br>Leg</div>
-                <div class="anatomy-btn" onclick="addAnatomyDOM('lungs')">🫁<br>Lungs</div>
-                <div class="anatomy-btn" onclick="addAnatomyDOM('abdomen')">🫃<br>Abdomen</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal บันทึกเวร -->
-    <div id="save-modal">
-        <div style="background:#fff; padding:25px; border-radius:8px; width:90%; max-width:400px;">
-            <h3 style="margin-bottom:15px; color:var(--primary);"><i class="fa-solid fa-cloud-arrow-up"></i> บันทึกเวรขึ้น Cloud</h3>
-            <div style="margin-bottom: 20px;">
-                <label style="display:block; font-size:0.9rem; margin-bottom:5px; color:var(--text-muted);">ชื่อพยาบาลเวร *</label>
-                <input type="text" id="nurse-name" style="width:100%; padding:10px; border:1px solid var(--border-color); border-radius:4px; font-family:inherit;">
-            </div>
-            <div style="display:flex; justify-content:flex-end; gap:10px;">
-                <button onclick="document.getElementById('save-modal').style.display='none'" style="padding:8px 16px; background:#f1f5f9; border:none; border-radius:4px; cursor:pointer;">ยกเลิก</button>
-                <button onclick="confirmSaveCloud()" style="padding:8px 16px; background:var(--primary); color:#fff; border:none; border-radius:4px; cursor:pointer;">บันทึกขึ้นระบบ</button>
+                <div class="anatomy-btn" onclick="stampAnatomy('body')">🧍‍♂️<br>Body</div>
+                <div class="anatomy-btn" onclick="stampAnatomy('head')">👤<br>Head</div>
+                <div class="anatomy-btn" onclick="stampAnatomy('arm')">💪<br>Arm</div>
+                <div class="anatomy-btn" onclick="stampAnatomy('leg')">🦵<br>Leg</div>
+                <div class="anatomy-btn" onclick="stampAnatomy('lungs')">🫁<br>Lungs</div>
+                <div class="anatomy-btn" onclick="stampAnatomy('abdomen')">🫃<br>Abdomen</div>
             </div>
         </div>
     </div>
@@ -189,14 +225,20 @@
 
         let patientsData = [];
         
-        // Global State สำหรับ Sync แบบ Realtime ทุกหน้าจอ
-        let globalState = {}; // { '01': { text: '', canvas: '', anatomyHTML: '' } }
+        // Global State (แหล่งรวมข้อมูลจริง ซิงก์ทุกเมนู)
+        let globalState = {}; 
         
         let currentTool = 'pen'; 
         let currentColor = '#2563eb'; 
+        let currentSize = 2;
+        let isFillShape = false;
+        
         let activeBed = null;
+        let activeCanvasId = null;
         let currentBedIndex = 0;
+        let newOrderViewMode = 'card'; // 'card' or 'table'
 
+        // ภาพ Anatomy
         const anatomyImages = {
             body: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%2364748b" stroke-width="2"><circle cx="50" cy="15" r="8"/><path d="M30 35h40v40H30zM30 35l-15 20M70 35l15 20M40 75v20M60 75v20"/></svg>',
             head: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%2364748b" stroke-width="2"><circle cx="50" cy="45" r="30"/><path d="M50 75v25M25 100h50"/></svg>',
@@ -206,33 +248,7 @@
             abdomen: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%2364748b" stroke-width="2"><rect x="20" y="20" width="60" height="60" rx="15"/></svg>'
         };
 
-        // --- ระบบ Toolbar ลากได้ ---
-        dragElement(document.getElementById("draggable-toolbar"));
-        function dragElement(elmnt) {
-            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-            const handle = elmnt.querySelector('.drag-handle');
-            handle.onpointerdown = dragMouseDown;
-
-            function dragMouseDown(e) {
-                e.preventDefault();
-                pos3 = e.clientX; pos4 = e.clientY;
-                document.onpointerup = closeDragElement;
-                document.onpointermove = elementDrag;
-            }
-            function elementDrag(e) {
-                e.preventDefault();
-                pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY;
-                pos3 = e.clientX; pos4 = e.clientY;
-                elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
-                elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
-                elmnt.style.right = 'auto'; // ปลด right ออกเพื่อให้ left ทำงาน
-            }
-            function closeDragElement() {
-                document.onpointerup = null; document.onpointermove = null;
-            }
-        }
-
-        // --- ตั้งค่าเครื่องมือ ---
+        // --- ตั้งค่าเครื่องมือวาดภาพ ---
         function setTool(tool) {
             currentTool = tool;
             document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
@@ -244,15 +260,34 @@
             elem.classList.add('active');
             if(currentTool === 'eraser') setTool('pen');
         }
+        function updateSize(val) { currentSize = val; }
+        function toggleFill() {
+            isFillShape = !isFillShape;
+            const btn = document.getElementById('tool-fill');
+            if(isFillShape) btn.classList.add('active');
+            else btn.classList.remove('active');
+        }
 
-        // --- โหลดข้อมูล (มี Cache) ---
+        // --- โหลดข้อมูลพร้อม Progress Bar ปลอมๆ ให้ดูไว ---
         async function fetchDataFromServer(forceRefresh = false) {
-            if (forceRefresh) document.getElementById('loader').style.display = 'block';
+            const loader = document.getElementById('loading-screen');
+            const pBar = document.getElementById('load-bar');
+            const pText = document.getElementById('load-percent');
             
+            loader.style.display = 'flex';
+            pBar.style.width = '0%'; pText.innerText = '0%';
+
+            // จำลองโหลดเปอร์เซ็นต์
+            let percent = 0;
+            const interval = setInterval(() => {
+                if(percent < 85) { percent += 5; pBar.style.width = percent + '%'; pText.innerText = percent + '%'; }
+            }, 50);
+
             const cached = sessionStorage.getItem('ipd3_patients');
             if (cached && !forceRefresh) {
                 patientsData = JSON.parse(cached);
-                initApp();
+                clearInterval(interval);
+                finishLoading(loader, pBar, pText);
                 return;
             }
 
@@ -261,28 +296,50 @@
                 patientsData = await response.json();
                 sessionStorage.setItem('ipd3_patients', JSON.stringify(patientsData));
             } catch (err) {
-                if(!cached) alert('ไม่สามารถเชื่อมต่อฐานข้อมูลได้');
+                if(!cached) Swal.fire('ข้อผิดพลาด', 'ไม่สามารถดึงข้อมูลจาก Google Sheet ได้', 'error');
             }
-            document.getElementById('loader').style.display = 'none';
-            initApp();
+            
+            clearInterval(interval);
+            finishLoading(loader, pBar, pText);
+        }
+
+        function finishLoading(loader, pBar, pText) {
+            pBar.style.width = '100%'; pText.innerText = '100%';
+            setTimeout(() => {
+                loader.style.display = 'none';
+                initApp();
+            }, 300);
         }
 
         function initApp() {
-            document.getElementById('patient-count').innerText = `ผู้ป่วย ${patientsData.length} ราย`;
-            // Initialize global state for each bed
+            document.getElementById('patient-count').innerText = `${patientsData.length} ราย`;
+            // กำหนดค่าเริ่มต้นให้ Global State 
             patientsData.forEach(pt => {
-                if(!globalState[pt.bed]) globalState[pt.bed] = { text: '', canvas: null, anatomyHTML: '' };
+                if(!globalState[pt.bed]) {
+                    globalState[pt.bed] = { 
+                        text: '', canvas: null, stampCount: 0,
+                        io: pt.rec !== '-' ? pt.rec : '',
+                        film: pt.film !== '-' ? pt.film : '',
+                        ds: pt.ds !== '-' ? pt.ds : '',
+                        consult: pt.consult !== '-' ? pt.consult : '',
+                        hc2: pt.hc2 !== '-' ? pt.hc2 : '',
+                        hc5: pt.hc5 !== '-' ? pt.hc5 : '',
+                        lab: pt.lab !== '-' ? pt.lab : ''
+                    };
+                }
             });
             renderWorkList();
             renderNewOrder();
             buildCardPills();
+            switchView('worklist'); // เริ่มต้นที่หน้าแรก
         }
 
-        // --- ระบบอัปเดตข้อมูล Realtime ไปยัง Global State ---
-        function handleTextChange(bed, val) {
-            globalState[bed].text = val;
-            // Sync ทุก textarea ของเตียงนี้ที่เปิดอยู่
-            document.querySelectorAll(`textarea[data-bed="${bed}"]`).forEach(el => {
+        // --- ระบบ Sync ข้อมูลแบบเรียลไทม์ ---
+        // เวลาพิมพ์ Text
+        function handleTextChange(bed, field, val) {
+            globalState[bed][field] = val;
+            // ซิงก์ไปทุกช่องในหน้าเว็บที่มี data-bind ตรงกัน
+            document.querySelectorAll(`[data-bind="${bed}-${field}"]`).forEach(el => {
                 if (el.value !== val) el.value = val;
             });
         }
@@ -291,60 +348,43 @@
             if(text === '-' || text.trim() === '') return;
             const currentText = globalState[bed].text;
             const newText = currentText + (currentText ? '\n' : '') + `${label}: ${text}`;
-            handleTextChange(bed, newText);
+            handleTextChange(bed, 'text', newText);
         }
 
-        function saveCanvasToState(bed, canvasId) {
-            const canvas = document.getElementById(canvasId);
-            if(canvas) globalState[bed].canvas = canvas.toDataURL();
+        // --- สลับเมนู ---
+        function switchView(viewName) {
+            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`nav-${viewName}`).classList.add('active');
             
-            const layer = document.getElementById(`anatomy-layer-${canvasId}`);
-            if(layer) globalState[bed].anatomyHTML = layer.innerHTML;
-        }
-
-        function restoreCanvasFromState(bed, canvasId) {
-            const canvas = document.getElementById(canvasId);
-            if(!canvas) return;
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0,0, canvas.width, canvas.height);
+            document.querySelectorAll('.container > div').forEach(div => div.style.display = 'none');
             
-            if (globalState[bed].canvas) {
-                const img = new Image();
-                img.onload = () => ctx.drawImage(img, 0, 0);
-                img.src = globalState[bed].canvas;
+            if(viewName === 'worklist') {
+                document.getElementById('view-worklist').style.display = 'block';
+                // โหลดรูปลง Canvas ให้ตรงกับ State
+                patientsData.forEach(pt => restoreCanvas(pt.bed, `canvas-wl-${pt.bed}`));
             }
-            
-            const layer = document.getElementById(`anatomy-layer-${canvasId}`);
-            if(layer) {
-                layer.innerHTML = globalState[bed].anatomyHTML;
-                attachDragEventsToAnatomy(layer, bed, canvasId);
+            if(viewName === 'workcard') {
+                document.getElementById('view-workcard').style.display = 'block';
+                renderSingleCard(currentBedIndex); // โหลดการ์ดที่เลือกปัจจุบัน
             }
-        }
-
-        function clearNote(bed) {
-            if(confirm('ต้องการลบข้อมูลที่พิมพ์และลายเส้นทั้งหมดของเตียงนี้ใช่หรือไม่?')) {
-                globalState[bed].text = '';
-                globalState[bed].canvas = null;
-                globalState[bed].anatomyHTML = '';
-                
-                // สั่ง Render หน้าจอที่เปิดอยู่ใหม่
-                document.querySelectorAll(`textarea[data-bed="${bed}"]`).forEach(el => el.value = '');
-                document.querySelectorAll(`canvas[id$="-${bed}"]`).forEach(canvas => {
-                    const ctx = canvas.getContext('2d');
-                    ctx.clearRect(0,0, canvas.width, canvas.height);
-                    const layer = document.getElementById(`anatomy-layer-${canvas.id}`);
-                    if(layer) layer.innerHTML = '';
-                });
+            if(viewName === 'neworder') {
+                document.getElementById('view-neworder').style.display = 'block';
+                if(newOrderViewMode === 'card') {
+                    patientsData.forEach(pt => restoreCanvas(pt.bed, `canvas-no-${pt.bed}`));
+                }
+            }
+            if(viewName === 'history') {
+                document.getElementById('view-history').style.display = 'block';
+                loadHistory();
             }
         }
 
-        // --- สร้าง HTML ---
+        // --- Render UI ---
         function createInfoGrid(pt) {
             return `
                 <div class="info-grid">
                     <div class="info-item full-width" onclick="appendToNote('${pt.bed}', 'Dx', '${pt.dx}')">
-                        <span class="info-label">การวินิจฉัย (DIAGNOSIS)</span>
-                        <span class="info-val" style="font-weight:600;">${pt.dx}</span>
+                        <span class="info-label">DIAGNOSIS</span><span class="info-val" style="font-weight:600;">${pt.dx}</span>
                     </div>
                     <div class="info-item" onclick="appendToNote('${pt.bed}', 'REC', '${pt.rec}')">
                         <span class="info-label">REC</span><span class="info-val">${pt.rec}</span>
@@ -353,10 +393,10 @@
                         <span class="info-label">ONEDAY / STAT</span><span class="info-val">${pt.onedayStat}</span>
                     </div>
                     <div class="info-item" onclick="appendToNote('${pt.bed}', 'พ่นยา', '${pt.nebulizer1} ${pt.nebulizer2}')">
-                        <span class="info-label">พ่นยา (1 & 2)</span><span class="info-val">${pt.nebulizer1} ${pt.nebulizer2 !== '-' ? '| ' + pt.nebulizer2 : ''}</span>
+                        <span class="info-label">พ่นยา</span><span class="info-val">${pt.nebulizer1} ${pt.nebulizer2 !== '-' ? '| ' + pt.nebulizer2 : ''}</span>
                     </div>
                     <div class="info-item" onclick="appendToNote('${pt.bed}', 'DTX/Hct', '${pt.dtx} / ${pt.hct}')">
-                        <span class="info-label">DTX / Hct</span><span class="info-val">${pt.dtx} / ${pt.hct}</span>
+                        <span class="info-label">DTX/Hct</span><span class="info-val">${pt.dtx} / ${pt.hct}</span>
                     </div>
                     <div class="info-item" onclick="appendToNote('${pt.bed}', 'Film', '${pt.film}')">
                         <span class="info-label">Film</span><span class="info-val">${pt.film}</span>
@@ -367,8 +407,8 @@
                     <div class="info-item" onclick="appendToNote('${pt.bed}', 'Consult', '${pt.consult}')">
                         <span class="info-label">Consult</span><span class="info-val">${pt.consult}</span>
                     </div>
-                    <div class="info-item" onclick="appendToNote('${pt.bed}', 'H/C2 & H/C5', '${pt.hc2} | ${pt.hc5}')">
-                        <span class="info-label">H/C2 & H/C5</span><span class="info-val">${pt.hc2} | ${pt.hc5}</span>
+                    <div class="info-item" onclick="appendToNote('${pt.bed}', 'H/C', '${pt.hc2} | ${pt.hc5}')">
+                        <span class="info-label">H/C</span><span class="info-val">${pt.hc2} | ${pt.hc5}</span>
                     </div>
                     <div class="info-item full-width" onclick="appendToNote('${pt.bed}', 'LAB', '${pt.lab}')">
                         <span class="info-label">LAB</span><span class="info-val">${pt.lab}</span>
@@ -377,7 +417,6 @@
             `;
         }
 
-        // --- Render Views ---
         function renderWorkList() {
             const container = document.getElementById('view-worklist');
             container.innerHTML = '';
@@ -392,27 +431,21 @@
                         </div>
                         ${createInfoGrid(pt)}
                         <div class="note-section">
-                            <label style="font-weight:600; font-size:0.9rem; color:var(--primary);"><i class="fa-solid fa-keyboard"></i> พิมพ์โน้ต (คลิกที่ข้อมูลเพื่อเพิ่มอัตโนมัติ)</label>
-                            <textarea data-bed="${pt.bed}" class="text-note" oninput="handleTextChange('${pt.bed}', this.value)">${globalState[pt.bed].text}</textarea>
+                            <label style="font-weight:600; color:var(--primary);"><i class="fa-solid fa-keyboard"></i> พิมพ์โน้ต</label>
+                            <textarea data-bind="${pt.bed}-text" class="text-note" oninput="handleTextChange('${pt.bed}', 'text', this.value)">${globalState[pt.bed].text}</textarea>
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-                                <label style="font-weight:600; font-size:0.9rem; color:var(--primary);"><i class="fa-solid fa-pen-clip"></i> วาดโน้ต & Anatomy</label>
+                                <label style="font-weight:600; color:var(--primary);"><i class="fa-solid fa-pen-clip"></i> วาดโน้ต</label>
                                 <div style="display:flex; gap:8px;">
-                                    <button class="btn-outline" style="color:#ef4444; border-color:#ef4444; font-size:0.8rem; padding:4px 8px;" onclick="clearNote('${pt.bed}')"><i class="fa-solid fa-trash-can"></i> ลบ</button>
-                                    <button class="btn-outline" style="color:var(--primary); border-color:var(--primary); font-size:0.8rem; padding:4px 8px;" onclick="openAnatomyModal('${pt.bed}', '${cid}')"><i class="fa-solid fa-child-reaching"></i> แทรก Anatomy</button>
+                                    <button class="btn-outline" style="color:#ef4444; border-color:#ef4444;" onclick="clearNotePrompt('${pt.bed}')">ลบทั้งหมด</button>
+                                    <button class="btn-outline" style="color:var(--primary); border-color:var(--primary);" onclick="prepareAnatomy('${pt.bed}', '${cid}')">แทรก Anatomy</button>
                                 </div>
                             </div>
-                            <div class="canvas-wrapper">
-                                <canvas id="${cid}"></canvas>
-                                <div class="anatomy-layer" id="anatomy-layer-${cid}"></div>
-                            </div>
+                            <div class="canvas-wrapper"><canvas id="${cid}"></canvas></div>
                         </div>
                     </div>
                 `;
             });
-            patientsData.forEach(pt => {
-                setupCanvas(`canvas-wl-${pt.bed}`, pt.bed);
-                restoreCanvasFromState(pt.bed, `canvas-wl-${pt.bed}`);
-            });
+            patientsData.forEach(pt => setupCanvas(`canvas-wl-${pt.bed}`, pt.bed));
         }
 
         function buildCardPills() {
@@ -441,256 +474,290 @@
                     <div class="card-header">
                         <span class="bed-badge">เตียง ${pt.bed}</span>
                         <span style="font-size:1.25rem; font-weight:600;">${pt.name}</span>
-                        <span style="font-size:0.9rem; color:var(--text-muted);">AN: ${pt.an}</span>
                     </div>
                     ${createInfoGrid(pt)}
                     <div class="note-section">
-                        <textarea data-bed="${pt.bed}" class="text-note" oninput="handleTextChange('${pt.bed}', this.value)">${globalState[pt.bed].text}</textarea>
+                        <textarea data-bind="${pt.bed}-text" class="text-note" oninput="handleTextChange('${pt.bed}', 'text', this.value)">${globalState[pt.bed].text}</textarea>
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-                            <label style="font-weight:600; font-size:0.9rem; color:var(--primary);">วาดโน้ต & Anatomy</label>
+                            <label style="font-weight:600; color:var(--primary);">วาดโน้ต</label>
                             <div style="display:flex; gap:8px;">
-                                <button class="btn-outline" style="color:#ef4444; border-color:#ef4444; font-size:0.8rem; padding:4px 8px;" onclick="clearNote('${pt.bed}')"><i class="fa-solid fa-trash-can"></i> ลบ</button>
-                                <button class="btn-outline" style="color:var(--primary); border-color:var(--primary); font-size:0.8rem; padding:4px 8px;" onclick="openAnatomyModal('${pt.bed}', '${cid}')">แทรก Anatomy</button>
+                                <button class="btn-outline" style="color:#ef4444; border-color:#ef4444;" onclick="clearNotePrompt('${pt.bed}')">ลบ</button>
+                                <button class="btn-outline" style="color:var(--primary); border-color:var(--primary);" onclick="prepareAnatomy('${pt.bed}', '${cid}')">แทรก Anatomy</button>
                             </div>
                         </div>
-                        <div class="canvas-wrapper">
-                            <canvas id="${cid}"></canvas>
-                            <div class="anatomy-layer" id="anatomy-layer-${cid}"></div>
-                        </div>
+                        <div class="canvas-wrapper"><canvas id="${cid}"></canvas></div>
                     </div>
                 </div>
             `;
             setupCanvas(cid, pt.bed);
-            restoreCanvasFromState(pt.bed, cid);
+            restoreCanvas(pt.bed, cid);
         }
 
         function renderNewOrder() {
-            const container = document.getElementById('view-neworder');
-            container.innerHTML = '<h3 style="margin-bottom:15px; color:var(--primary); border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">รายการ New Order</h3>';
+            const cardsView = document.getElementById('neworder-cards-view');
+            const tbody = document.getElementById('neworder-tbody');
+            cardsView.innerHTML = ''; tbody.innerHTML = '';
             
             patientsData.forEach(pt => {
                 const cid = `canvas-no-${pt.bed}`;
-                container.innerHTML += `
+                
+                // --- ส่วน Card View ---
+                cardsView.innerHTML += `
                     <div class="patient-card">
-                        <div class="card-header" style="border-bottom-color:#fbbf24; margin-bottom: 10px;">
+                        <div class="card-header" style="border-bottom-color:#fbbf24;">
                             <span class="bed-badge" style="color:#d97706;">เตียง ${pt.bed}</span>
                             <span style="font-size:1.25rem; font-weight:600;">${pt.name}</span>
                         </div>
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                            <div class="input-group"><label>I/O (REC)</label><input type="text" value="${pt.rec !== '-' ? pt.rec : ''}"></div>
-                            <div class="input-group"><label>Film</label><input type="text" value="${pt.film !== '-' ? pt.film : ''}"></div>
-                            <div class="input-group"><label>D/S</label><input type="text" value="${pt.ds !== '-' ? pt.ds : ''}"></div>
-                            <div class="input-group"><label>Consult</label><input type="text" value="${pt.consult !== '-' ? pt.consult : ''}"></div>
-                            <div class="input-group"><label>H/C2</label><input type="text" value="${pt.hc2 !== '-' ? pt.hc2 : ''}"></div>
-                            <div class="input-group"><label>H/C5</label><input type="text" value="${pt.hc5 !== '-' ? pt.hc5 : ''}"></div>
-                            <div class="input-group full-width"><label>LAB</label><input type="text" value="${pt.lab !== '-' ? pt.lab : ''}"></div>
+                            <div class="input-group"><label>I/O</label><input type="text" data-bind="${pt.bed}-io" value="${globalState[pt.bed].io}" oninput="handleTextChange('${pt.bed}', 'io', this.value)"></div>
+                            <div class="input-group"><label>Film</label><input type="text" data-bind="${pt.bed}-film" value="${globalState[pt.bed].film}" oninput="handleTextChange('${pt.bed}', 'film', this.value)"></div>
+                            <div class="input-group"><label>D/S</label><input type="text" data-bind="${pt.bed}-ds" value="${globalState[pt.bed].ds}" oninput="handleTextChange('${pt.bed}', 'ds', this.value)"></div>
+                            <div class="input-group"><label>Consult</label><input type="text" data-bind="${pt.bed}-consult" value="${globalState[pt.bed].consult}" oninput="handleTextChange('${pt.bed}', 'consult', this.value)"></div>
+                            <div class="input-group"><label>H/C2</label><input type="text" data-bind="${pt.bed}-hc2" value="${globalState[pt.bed].hc2}" oninput="handleTextChange('${pt.bed}', 'hc2', this.value)"></div>
+                            <div class="input-group"><label>H/C5</label><input type="text" data-bind="${pt.bed}-hc5" value="${globalState[pt.bed].hc5}" oninput="handleTextChange('${pt.bed}', 'hc5', this.value)"></div>
+                            <div class="input-group full-width"><label>LAB</label><input type="text" data-bind="${pt.bed}-lab" value="${globalState[pt.bed].lab}" oninput="handleTextChange('${pt.bed}', 'lab', this.value)"></div>
                         </div>
                         <div class="note-section" style="margin-top: 15px;">
-                            <textarea data-bed="${pt.bed}" class="text-note" oninput="handleTextChange('${pt.bed}', this.value)" style="height:50px;">${globalState[pt.bed].text}</textarea>
+                            <textarea data-bind="${pt.bed}-text" class="text-note" oninput="handleTextChange('${pt.bed}', 'text', this.value)">${globalState[pt.bed].text}</textarea>
                             <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <label style="font-weight:600; font-size:0.9rem; color:var(--primary);">วาดโน้ตเพิ่มเติม</label>
+                                <label style="font-weight:600; color:var(--primary);">วาดโน้ตเพิ่มเติม</label>
                                 <div style="display:flex; gap:8px;">
-                                    <button class="btn-outline" style="color:#ef4444; border-color:#ef4444; font-size:0.8rem; padding:4px 8px;" onclick="clearNote('${pt.bed}')">ลบ</button>
-                                    <button class="btn-outline" style="color:var(--primary); border-color:var(--primary); font-size:0.8rem; padding:4px 8px;" onclick="openAnatomyModal('${pt.bed}', '${cid}')">แทรก Anatomy</button>
+                                    <button class="btn-outline" style="color:#ef4444; border-color:#ef4444;" onclick="clearNotePrompt('${pt.bed}')">ลบ</button>
+                                    <button class="btn-outline" style="color:var(--primary); border-color:var(--primary);" onclick="prepareAnatomy('${pt.bed}', '${cid}')">แทรก Anatomy</button>
                                 </div>
                             </div>
-                            <div class="canvas-wrapper">
-                                <canvas id="${cid}"></canvas>
-                                <div class="anatomy-layer" id="anatomy-layer-${cid}"></div>
-                            </div>
+                            <div class="canvas-wrapper"><canvas id="${cid}"></canvas></div>
                         </div>
                     </div>
                 `;
+
+                // --- ส่วน Table View ---
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-weight:600; color:var(--primary);">${pt.bed}</td>
+                        <td style="font-weight:600;">${pt.name}</td>
+                        <td><input type="text" data-bind="${pt.bed}-io" value="${globalState[pt.bed].io}" oninput="handleTextChange('${pt.bed}', 'io', this.value)"></td>
+                        <td><input type="text" data-bind="${pt.bed}-film" value="${globalState[pt.bed].film}" oninput="handleTextChange('${pt.bed}', 'film', this.value)"></td>
+                        <td><input type="text" data-bind="${pt.bed}-ds" value="${globalState[pt.bed].ds}" oninput="handleTextChange('${pt.bed}', 'ds', this.value)"></td>
+                        <td><input type="text" data-bind="${pt.bed}-consult" value="${globalState[pt.bed].consult}" oninput="handleTextChange('${pt.bed}', 'consult', this.value)"></td>
+                        <td>
+                            <input type="text" data-bind="${pt.bed}-hc2" value="${globalState[pt.bed].hc2}" oninput="handleTextChange('${pt.bed}', 'hc2', this.value)" placeholder="H/C2">
+                            <input type="text" data-bind="${pt.bed}-hc5" value="${globalState[pt.bed].hc5}" oninput="handleTextChange('${pt.bed}', 'hc5', this.value)" placeholder="H/C5" style="margin-top:4px;">
+                        </td>
+                        <td><input type="text" data-bind="${pt.bed}-lab" value="${globalState[pt.bed].lab}" oninput="handleTextChange('${pt.bed}', 'lab', this.value)"></td>
+                        <td><textarea data-bind="${pt.bed}-text" oninput="handleTextChange('${pt.bed}', 'text', this.value)">${globalState[pt.bed].text}</textarea></td>
+                    </tr>
+                `;
             });
-            patientsData.forEach(pt => {
-                setupCanvas(`canvas-no-${pt.bed}`, pt.bed);
-                restoreCanvasFromState(pt.bed, `canvas-no-${pt.bed}`);
-            });
+            
+            patientsData.forEach(pt => setupCanvas(`canvas-no-${pt.bed}`, pt.bed));
         }
 
-        function switchView(viewName) {
-            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(`nav-${viewName}`).classList.add('active');
-            
-            document.getElementById('view-worklist').style.display = 'none';
-            document.getElementById('view-workcard').style.display = 'none';
-            document.getElementById('view-neworder').style.display = 'none';
-            document.getElementById('view-history').style.display = 'none';
-            
-            if(viewName === 'workcard') renderSingleCard(currentBedIndex);
-            
-            document.getElementById(`view-${viewName}`).style.display = 'block';
+        function toggleNewOrderView() {
+            newOrderViewMode = newOrderViewMode === 'card' ? 'table' : 'card';
+            document.getElementById('neworder-cards-view').style.display = newOrderViewMode === 'card' ? 'block' : 'none';
+            document.getElementById('neworder-table-view').style.display = newOrderViewMode === 'table' ? 'block' : 'none';
+            if(newOrderViewMode === 'card') {
+                // รัน Canvas ใหม่ตอนกลับมาหน้าการ์ด
+                patientsData.forEach(pt => restoreCanvas(pt.bed, `canvas-no-${pt.bed}`));
+            }
         }
 
-        // --- ระบบ Canvas วาดเขียน ---
+        // --- ระบบจัดการ Canvas ครบวงจร ---
         function setupCanvas(canvasId, bed) {
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
             const rect = canvas.getBoundingClientRect();
+            if(rect.width === 0) return; // ซ่อนอยู่
             canvas.width = rect.width; canvas.height = rect.height;
 
             let isDrawing = false;
+            let startX, startY;
+            let snapshot;
+
             canvas.addEventListener('pointerdown', (e) => {
                 if (e.pointerType !== 'pen' && e.pointerType !== 'mouse') return;
                 isDrawing = true;
-                ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY);
+                startX = e.offsetX; startY = e.offsetY;
+                
+                // บันทึกภาพก่อนวาด (สำหรับทรงเรขาคณิต)
+                snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                
+                ctx.beginPath(); ctx.moveTo(startX, startY);
+                
                 if (currentTool === 'eraser') {
-                    ctx.globalCompositeOperation = 'destination-out'; ctx.lineWidth = 25;
+                    ctx.globalCompositeOperation = 'destination-out'; ctx.lineWidth = currentSize * 5;
                 } else {
                     ctx.globalCompositeOperation = 'source-over'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
                     ctx.strokeStyle = currentTool === 'highlighter' ? currentColor + '44' : currentColor;
-                    ctx.lineWidth = currentTool === 'highlighter' ? 18 : 2;
+                    ctx.lineWidth = currentTool === 'highlighter' ? currentSize * 4 : currentSize;
+                    ctx.fillStyle = currentColor;
                 }
                 e.preventDefault();
             });
 
             canvas.addEventListener('pointermove', (e) => {
                 if (!isDrawing) return;
-                ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); e.preventDefault();
+                
+                if(['line', 'rect', 'circle'].includes(currentTool)) {
+                    // วาดรูปทรงต้องล้างหน้าจอก่อนแล้ววาดทับ
+                    ctx.putImageData(snapshot, 0, 0);
+                    ctx.beginPath();
+                    if(currentTool === 'line') {
+                        ctx.moveTo(startX, startY); ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke();
+                    } else if(currentTool === 'rect') {
+                        const w = e.offsetX - startX; const h = e.offsetY - startY;
+                        if(isFillShape) { ctx.globalAlpha = 0.5; ctx.fillRect(startX, startY, w, h); ctx.globalAlpha=1.0; }
+                        ctx.rect(startX, startY, w, h); ctx.stroke();
+                    } else if(currentTool === 'circle') {
+                        const radius = Math.sqrt(Math.pow(startX - e.offsetX, 2) + Math.pow(startY - e.offsetY, 2));
+                        ctx.arc(startX, startY, radius, 0, 2 * Math.PI);
+                        if(isFillShape) { ctx.globalAlpha = 0.5; ctx.fill(); ctx.globalAlpha=1.0; }
+                        ctx.stroke();
+                    }
+                } else {
+                    // วาดอิสระ
+                    ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke();
+                }
+                e.preventDefault();
             });
 
             const stopDraw = () => { 
                 if (isDrawing) { 
-                    ctx.closePath(); isDrawing = false; 
-                    saveCanvasToState(bed, canvasId); 
+                    isDrawing = false; 
+                    // อัปเดตลง Global State ทุกครั้งที่วาดเสร็จ
+                    globalState[bed].canvas = canvas.toDataURL();
                 } 
             };
             canvas.addEventListener('pointerup', stopDraw);
             canvas.addEventListener('pointerleave', stopDraw);
         }
 
-        // --- ระบบ Anatomy ลาก & ย่อขยาย (DOM Overlay) ---
-        let activeAnatomyBed = null;
-        let activeAnatomyCanvasId = null;
+        function restoreCanvas(bed, canvasId) {
+            const canvas = document.getElementById(canvasId);
+            if(!canvas || canvas.getBoundingClientRect().width === 0) return;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0,0, canvas.width, canvas.height);
+            
+            if (globalState[bed].canvas) {
+                const img = new Image();
+                img.onload = () => ctx.drawImage(img, 0, 0);
+                img.src = globalState[bed].canvas;
+            }
+        }
 
-        function openAnatomyModal(bed, canvasId) {
-            activeAnatomyBed = bed;
-            activeAnatomyCanvasId = canvasId;
+        function clearNotePrompt(bed) {
+            Swal.fire({
+                title: 'ยืนยันการลบ?',
+                text: "ข้อมูลโน้ตและรูปวาดของเตียงนี้จะถูกลบทั้งหมด",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#94a3b8',
+                confirmButtonText: 'ลบทิ้ง',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    globalState[bed].text = '';
+                    globalState[bed].canvas = null;
+                    globalState[bed].stampCount = 0;
+                    
+                    document.querySelectorAll(`[data-bind="${bed}-text"]`).forEach(el => el.value = '');
+                    document.querySelectorAll(`canvas[id$="-${bed}"]`).forEach(canvas => {
+                        const ctx = canvas.getContext('2d');
+                        ctx.clearRect(0,0, canvas.width, canvas.height);
+                    });
+                }
+            });
+        }
+
+        // --- ระบบ Anatomy (Grid Stamp คืนชีพ) ---
+        function prepareAnatomy(bed, canvasId) {
+            activeBed = bed;
+            activeCanvasId = canvasId;
             document.getElementById('anatomy-modal').style.display = 'flex';
         }
 
-        function addAnatomyDOM(part) {
-            if(!activeAnatomyCanvasId) return;
-            const layer = document.getElementById(`anatomy-layer-${activeAnatomyCanvasId}`);
+        function stampAnatomy(part) {
+            if(!activeCanvasId) return;
+            const canvas = document.getElementById(activeCanvasId);
+            const ctx = canvas.getContext('2d');
             
-            const div = document.createElement('div');
-            div.className = 'anatomy-item';
-            div.style.left = '10px'; div.style.top = '10px';
-            div.innerHTML = `<div class="drag-bar"></div><img src="${anatomyImages[part]}">`;
+            const imgSize = 90; const padding = 10;
+            let count = globalState[activeBed].stampCount;
+            const cols = Math.floor(canvas.width / (imgSize + padding));
             
-            layer.appendChild(div);
+            const x = (count % cols) * (imgSize + padding) + padding;
+            const y = Math.floor(count / cols) * (imgSize + padding) + padding;
             
-            // ทำให้ขยับได้
-            makeAnatomyDraggable(div, activeAnatomyBed, activeAnatomyCanvasId);
-            
-            saveCanvasToState(activeAnatomyBed, activeAnatomyCanvasId);
-            document.getElementById('anatomy-modal').style.display = 'none';
-        }
-
-        function makeAnatomyDraggable(elmnt, bed, canvasId) {
-            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-            const bar = elmnt.querySelector('.drag-bar');
-            
-            bar.onpointerdown = dragMouseDown;
-            elmnt.onmouseup = () => saveCanvasToState(bed, canvasId); // Save on resize
-
-            function dragMouseDown(e) {
-                e.preventDefault();
-                pos3 = e.clientX; pos4 = e.clientY;
-                document.onpointerup = closeDragElement;
-                document.onpointermove = elementDrag;
-            }
-            function elementDrag(e) {
-                e.preventDefault();
-                pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY;
-                pos3 = e.clientX; pos4 = e.clientY;
-                elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
-                elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
-            }
-            function closeDragElement() {
-                document.onpointerup = null; document.onpointermove = null;
-                saveCanvasToState(bed, canvasId);
-            }
-        }
-
-        function attachDragEventsToAnatomy(layer, bed, canvasId) {
-            const items = layer.querySelectorAll('.anatomy-item');
-            items.forEach(item => makeAnatomyDraggable(item, bed, canvasId));
-        }
-
-        // --- ระบบบันทึกและ Cloud Sync ---
-        function openSaveModal() { document.getElementById('save-modal').style.display = 'flex'; }
-
-        async function confirmSaveCloud() {
-            const name = document.getElementById('nurse-name').value.trim();
-            if(!name) { alert('กรุณากรอกชื่อพยาบาล'); return; }
-            
-            const record = { 
-                id: Date.now(), 
-                time: new Date().toLocaleString('th-TH'), 
-                nurse: name, 
-                count: patientsData.length,
-                state: globalState // เก็บข้อมูลทุกเตียงลงไปเลย
+            const img = new Image();
+            img.onload = () => {
+                ctx.globalAlpha = 0.5; 
+                ctx.drawImage(img, x, y, imgSize, imgSize);
+                ctx.globalAlpha = 1.0;
+                
+                globalState[activeBed].stampCount = count + 1; 
+                globalState[activeBed].canvas = canvas.toDataURL(); // Save to sync
+                
+                document.getElementById('anatomy-modal').style.display = 'none';
             };
-            
-            document.getElementById('save-modal').style.display = 'none';
-            document.getElementById('loader').style.display = 'block';
-            document.getElementById('loader').innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> กำลังอัปโหลดข้อมูลเวรขึ้น Cloud...';
-
-            try {
-                // อัปโหลดเข้า Google Sheet
-                await fetch(GAS_URL, {
-                    method: 'POST',
-                    mode: 'no-cors', // สำคัญสำหรับ Google Script POST จากเบราว์เซอร์
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(record)
-                });
-                
-                alert('บันทึกข้อมูลขึ้นระบบ (Cloud) สำเร็จ!');
-                loadCloudHistory();
-                switchView('history');
-            } catch (err) {
-                alert('การบันทึกอาจมีปัญหา กรุณาตรวจสอบอินเทอร์เน็ต');
-            }
-            
-            document.getElementById('loader').style.display = 'none';
-            document.getElementById('loader').innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> โหลดข้อมูล PTform...';
+            img.src = anatomyImages[part];
         }
 
-        async function loadCloudHistory() {
-            const tbody = document.getElementById('history-list');
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> โหลดประวัติจาก Cloud...</td></tr>`;
-            
-            try {
-                const res = await fetch(GAS_URL + '?action=history');
-                const history = await res.json();
-                
-                tbody.innerHTML = '';
-                if(history.length === 0) { 
-                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">ยังไม่มีประวัติในระบบ</td></tr>`; return; 
+        // --- ระบบบันทึกเวร & ประวัติด้วย SweetAlert2 ---
+        function openSaveModal() { 
+            Swal.fire({
+                title: 'บันทึกข้อมูลเวร',
+                input: 'text',
+                inputPlaceholder: 'กรอกชื่อพยาบาลเวร...',
+                showCancelButton: true,
+                confirmButtonText: 'บันทึก',
+                cancelButtonText: 'ยกเลิก',
+                confirmButtonColor: 'var(--primary)',
+                inputValidator: (value) => {
+                    if (!value) return 'กรุณากรอกชื่อก่อนบันทึก!'
                 }
-                
-                history.reverse().forEach(h => {
-                    tbody.innerHTML += `<tr>
-                        <td>${h.time}</td><td style="color:var(--primary); font-weight:500;">${h.nurse}</td>
-                        <td>${h.count || '-'} เตียง</td>
-                        <td><button class="btn-outline" style="background:var(--accent); font-size:0.8rem;" onclick='restoreHistoryState(${JSON.stringify(h.state)})'>เปิดดู</button></td>
-                    </tr>`;
-                });
-            } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">โหลดประวัติล้มเหลว</td></tr>`;
-            }
+            }).then((result) => {
+                if (result.isConfirmed) confirmSave(result.value);
+            });
         }
 
-        function restoreHistoryState(savedState) {
-            if(!savedState) return;
-            if(confirm('การเปิดประวัตินี้จะแทนที่โน้ตที่กำลังเขียนอยู่ปัจจุบัน ยืนยันหรือไม่?')) {
-                globalState = savedState;
-                switchView('worklist');
-                renderWorkList();
-                renderNewOrder();
-            }
+        function confirmSave(nurseName) {
+            const record = { id: Date.now(), time: new Date().toLocaleString('th-TH'), nurse: nurseName, count: patientsData.length };
+            let hist = JSON.parse(localStorage.getItem('ipd3_hist') || '[]');
+            hist.unshift(record);
+            localStorage.setItem('ipd3_hist', JSON.stringify(hist));
+            
+            Swal.fire({ title: 'สำเร็จ!', text: 'บันทึกส่งเวรเรียบร้อยแล้ว', icon: 'success', confirmButtonColor: 'var(--primary)' });
+            switchView('history');
+        }
+
+        function loadHistory() {
+            const tbody = document.getElementById('history-list');
+            const hist = JSON.parse(localStorage.getItem('ipd3_hist') || '[]');
+            tbody.innerHTML = '';
+            if(hist.length === 0) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px;">ยังไม่มีประวัติในเครื่องนี้</td></tr>`; return; }
+            hist.forEach(h => {
+                tbody.innerHTML += `<tr>
+                    <td>${h.time}</td><td style="color:var(--primary); font-weight:500;">${h.nurse}</td>
+                    <td>${h.count} เตียง</td>
+                    <td><button onclick="delHist(${h.id})" style="border:none;background:none;color:red;cursor:pointer;"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>`;
+            });
+        }
+
+        function delHist(id) {
+            Swal.fire({
+                title: 'ยืนยันลบประวัติ?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ลบทิ้ง', cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    let hist = JSON.parse(localStorage.getItem('ipd3_hist') || '[]');
+                    localStorage.setItem('ipd3_hist', JSON.stringify(hist.filter(x => x.id !== id)));
+                    loadHistory();
+                    Swal.fire('ลบแล้ว!', '', 'success');
+                }
+            });
         }
 
         window.onload = () => fetchDataFromServer(false);
