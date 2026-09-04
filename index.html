@@ -56,7 +56,6 @@
         .canvas-wrapper { position: relative; background-color: #fafafa; background-image: linear-gradient(#f0f0f0 1px, transparent 1px), linear-gradient(90deg, #f0f0f0 1px, transparent 1px); background-size: 20px 20px; border: 1px solid var(--border-color); border-radius: 6px; height: 300px; overflow: hidden; }
         canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
 
-        /* ระบบถ่ายภาพ */
         .photo-grid { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; }
         .photo-thumb { position: relative; width: 80px; height: 80px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); flex-shrink: 0; }
         .photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
@@ -169,8 +168,10 @@
     </div>
 
     <script>
-        // *** วาง URL ล่าสุดของคุณตรงนี้ ***
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbyu5d5NtvNrLpswp55ApvIuGRceEYwhdieS70W2FKi9n6caJp6Yu_ijQKXC19albTbi/exec'; 
+        // -------------------------------------------------------------------------
+        // เปลี่ยน URL ด้านล่างเป็นของคุณ หากโหลดไม่ได้ระบบจะแสดงข้อมูลจำลองให้อัตโนมัติ
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbwkmJYMEzC2XYTWhRQK-241XjDtmm_UQ72k58_0t07I-x8iUXwlI-y98K74bsoQERE/exec'; 
+        // -------------------------------------------------------------------------
 
         let patientsData = [];
         let globalState = {}; 
@@ -200,21 +201,38 @@
             isFillShape = !isFillShape; document.getElementById('tool-fill').classList.toggle('active', isFillShape);
         }
 
-        // --- โหลดข้อมูล & Real-time Auto Sync ---
+        // --- ระบบดึงข้อมูล ป้องกันจอดำ ค้าง 0% ---
         async function fetchDataFromServer(showLoader = true, isSilentSync = false) {
+            const loader = document.getElementById('loading-screen');
+            const pBar = document.getElementById('load-bar');
+            const pText = document.getElementById('load-percent');
+
             if (showLoader && !isSilentSync) {
-                document.getElementById('loading-screen').style.display = 'flex';
-                document.getElementById('load-bar').style.width = '30%';
+                loader.style.display = 'flex';
+                pBar.style.width = '10%'; pText.innerText = '10%';
             }
+
+            // ทำอนิเมชัน % วิ่ง
+            let percent = 10;
+            const interval = setInterval(() => {
+                if(percent < 85 && showLoader && !isSilentSync) { 
+                    percent += 5; pBar.style.width = percent + '%'; pText.innerText = percent + '%'; 
+                }
+            }, 50);
+
             try {
                 const response = await fetch(GAS_URL);
+                if (!response.ok) throw new Error('Network error');
                 const resData = await response.json();
-                if(showLoader && !isSilentSync) document.getElementById('load-bar').style.width = '70%';
                 
-                patientsData = resData.patients;
+                clearInterval(interval);
+                if(showLoader && !isSilentSync) { pBar.style.width = '100%'; pText.innerText = '100%'; }
                 
-                // ดึง Live State มาอัปเดตถ้ามีใหม่กว่า
-                const remoteState = resData.liveState;
+                // เช็คว่า GAS คืนค่าแบบ Array (เก่า) หรือ Object (ใหม่)
+                if (Array.isArray(resData)) patientsData = resData;
+                else patientsData = resData.patients || [];
+                
+                const remoteState = resData.liveState || {};
                 let needRender = false;
                 
                 patientsData.forEach(pt => {
@@ -227,37 +245,52 @@
                         };
                         needRender = true;
                     }
-                    if(remoteState && remoteState[pt.bed] && remoteState[pt.bed].lastUpdate > globalState[pt.bed].lastUpdate) {
-                        globalState[pt.bed] = remoteState[pt.bed];
-                        needRender = true;
+                    // อัปเดตถ้าข้อมูลใน Cloud ใหม่กว่า
+                    if(remoteState[pt.bed] && remoteState[pt.bed].lastUpdate > globalState[pt.bed].lastUpdate) {
+                        globalState[pt.bed] = remoteState[pt.bed]; needRender = true;
                     }
                 });
 
                 if(showLoader && !isSilentSync) {
-                    document.getElementById('load-bar').style.width = '100%';
-                    setTimeout(() => { document.getElementById('loading-screen').style.display = 'none'; }, 300);
+                    setTimeout(() => { loader.style.display = 'none'; }, 400);
                 }
                 
-                if(needRender || !isSilentSync) initApp();
+                if(needRender || (showLoader && !isSilentSync)) initApp();
                 document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-check" style="color:#10b981;"></i> ซิงก์แล้ว';
+                
             } catch (err) {
-                if(!isSilentSync) Swal.fire('ข้อผิดพลาด', 'ดึงข้อมูลไม่สำเร็จ', 'error');
+                clearInterval(interval);
+                if(showLoader && !isSilentSync) loader.style.display = 'none';
+                
+                // Fallback ข้อมูลจำลองหาก URL ผิด เพื่อให้เข้าแอปได้
+                if (patientsData.length === 0) {
+                    patientsData = [
+                        { bed:"01", an:"AN-1234", name:"(ตัวอย่าง) นายเหลี่ยม เสาสิม", dx:"#Pneumonia", rec:"Dressing wound OD", dtx:"-", hct:"-", film:"CXR", ds:"18.00", consult:"-", nebulizer1:"BERODUAL 1 NB", nebulizer2:"-", onedayStat:"Soft diet", hc2:"-", hc5:"-", lab:"CBC" }
+                    ];
+                    patientsData.forEach(pt => {
+                        if(!globalState[pt.bed]) globalState[pt.bed] = { text: '', canvas: null, stampCount: 0, photos: [], lastUpdate: 0, io: pt.rec, film: pt.film, ds: pt.ds, consult: pt.consult, hc2: pt.hc2, hc5: pt.hc5, lab: pt.lab };
+                    });
+                    initApp();
+                }
+
+                if(!isSilentSync) Swal.fire('ไม่สามารถเชื่อมต่อได้', 'ตรวจสอบ URL ของ Google Script ระบบจะแสดงข้อมูลจำลองแทน', 'warning');
                 document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-xmark" style="color:#ef4444;"></i> ออฟไลน์';
             }
         }
 
-        // สั่งดึงข้อมูลเงียบๆ ทุกๆ 10 วินาที
         setInterval(() => fetchDataFromServer(false, true), 10000);
 
         function triggerCloudSync() {
             clearTimeout(syncTimeout);
-            document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังอัปโหลด...';
+            document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> อัปโหลด...';
             syncTimeout = setTimeout(async () => {
                 try {
                     await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({action: 'sync_live', state: globalState}) });
                     document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-check" style="color:#10b981;"></i> ซิงก์แล้ว';
-                } catch(e) {}
-            }, 1500); // ดีเลย์ 1.5 วิ ป้องกันยิงรัวเกิน
+                } catch(e) {
+                    document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-xmark" style="color:#ef4444;"></i> ผิดพลาด';
+                }
+            }, 1500);
         }
 
         function initApp() {
@@ -267,8 +300,7 @@
         }
 
         function handleStateChange(bed, field, val) {
-            globalState[bed][field] = val;
-            globalState[bed].lastUpdate = Date.now();
+            globalState[bed][field] = val; globalState[bed].lastUpdate = Date.now();
             document.querySelectorAll(`[data-bind="${bed}-${field}"]`).forEach(el => { if (el.value !== val) el.value = val; });
             triggerCloudSync();
         }
@@ -279,23 +311,17 @@
             handleStateChange(bed, 'text', currentText + (currentText ? '\n' : '') + `${label}: ${text}`);
         }
 
-        // --- ระบบอัปโหลดภาพ (บีบอัด Base64) ---
+        // --- อัปโหลดภาพ & แชร์ ---
         async function handlePhotoUpload(bed, input) {
             const files = input.files;
             if(!globalState[bed].photos) globalState[bed].photos = [];
-            if(globalState[bed].photos.length + files.length > 4) {
-                Swal.fire('คำเตือน', 'แนบรูปได้สูงสุด 4 รูปต่อเตียง', 'warning'); return;
-            }
+            if(globalState[bed].photos.length + files.length > 4) { Swal.fire('คำเตือน', 'แนบรูปได้สูงสุด 4 รูป', 'warning'); return; }
             Swal.fire({title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
             
             for(let i=0; i<files.length; i++) {
-                const base64 = await compressImage(files[i]);
-                globalState[bed].photos.push(base64);
+                const base64 = await compressImage(files[i]); globalState[bed].photos.push(base64);
             }
-            globalState[bed].lastUpdate = Date.now();
-            triggerCloudSync();
-            Swal.close();
-            renderPhotosDOM(bed);
+            globalState[bed].lastUpdate = Date.now(); triggerCloudSync(); Swal.close(); renderPhotosDOM(bed);
         }
 
         function compressImage(file) {
@@ -307,8 +333,7 @@
                         const canvas = document.createElement('canvas');
                         const MAX = 800; let w = img.width, h = img.height;
                         if(w > h && w > MAX) { h *= MAX/w; w = MAX; } else if(h > MAX) { w *= MAX/h; h = MAX; }
-                        canvas.width = w; canvas.height = h;
-                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                        canvas.width = w; canvas.height = h; canvas.getContext('2d').drawImage(img, 0, 0, w, h);
                         resolve(canvas.toDataURL('image/jpeg', 0.6));
                     };
                     img.src = e.target.result;
@@ -321,41 +346,30 @@
             const arr = globalState[bed].photos || [];
             document.querySelectorAll(`.photo-grid-container-${bed}`).forEach(container => {
                 container.innerHTML = arr.map((p, idx) => `
-                    <div class="photo-thumb">
-                        <img src="${p}">
-                        <button class="photo-del" onclick="deletePhoto('${bed}', ${idx})"><i class="fa-solid fa-xmark"></i></button>
-                    </div>
+                    <div class="photo-thumb"><img src="${p}"><button class="photo-del" onclick="deletePhoto('${bed}', ${idx})"><i class="fa-solid fa-xmark"></i></button></div>
                 `).join('');
             });
         }
 
         function deletePhoto(bed, idx) {
-            globalState[bed].photos.splice(idx, 1);
-            globalState[bed].lastUpdate = Date.now();
+            globalState[bed].photos.splice(idx, 1); globalState[bed].lastUpdate = Date.now();
             triggerCloudSync(); renderPhotosDOM(bed);
         }
 
-        // --- ระบบแชร์ LINE (Web Share API) ---
         async function shareToLine(bed) {
-            const pt = patientsData.find(p => p.bed === bed);
-            const state = globalState[bed];
+            const pt = patientsData.find(p => p.bed === bed); const state = globalState[bed];
             const text = `ส่งเวรเตียง ${pt.bed}\nชื่อ: ${pt.name}\nDiagnosis: ${pt.dx}\n${state.text ? 'Note: '+state.text : ''}`;
-            
-            if(!navigator.share) { Swal.fire('ไม่รองรับ', 'เบราว์เซอร์นี้ไม่รองรับการแชร์ไฟล์โดยตรง', 'error'); return; }
-            
-            Swal.fire({title: 'เตรียมไฟล์สำหรับแชร์...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+            if(!navigator.share) { Swal.fire('ไม่รองรับ', 'เบราว์เซอร์นี้ไม่รองรับการแชร์โดยตรง', 'error'); return; }
+            Swal.fire({title: 'กำลังเตรียมไฟล์...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
             const filesArray = [];
             if(state.photos && state.photos.length > 0) {
                 for(let i=0; i<state.photos.length; i++) {
-                    const res = await fetch(state.photos[i]);
-                    const blob = await res.blob();
+                    const res = await fetch(state.photos[i]); const blob = await res.blob();
                     filesArray.push(new File([blob], `photo_${pt.bed}_${i+1}.jpg`, {type: 'image/jpeg'}));
                 }
             }
             Swal.close();
-            try {
-                await navigator.share({ title: `ส่งเวรเตียง ${pt.bed}`, text: text, files: filesArray.length > 0 ? filesArray : undefined });
-            } catch(e) { console.log('Share aborted'); }
+            try { await navigator.share({ title: `ส่งเวรเตียง ${pt.bed}`, text: text, files: filesArray.length > 0 ? filesArray : undefined }); } catch(e) {}
         }
 
         function createPhotoSection(bed) {
@@ -373,11 +387,9 @@
                         </div>
                     </div>
                     <div class="photo-grid photo-grid-container-${bed}" style="margin-top:10px;"></div>
-                </div>
-            `;
+                </div>`;
         }
 
-        // --- Render Views ---
         function createInfoGrid(pt) {
             return `
                 <div class="info-grid">
@@ -490,7 +502,7 @@
                         <td><input type="text" data-bind="${pt.bed}-film" value="${globalState[pt.bed].film}" oninput="handleStateChange('${pt.bed}', 'film', this.value)"></td>
                         <td><input type="text" data-bind="${pt.bed}-ds" value="${globalState[pt.bed].ds}" oninput="handleStateChange('${pt.bed}', 'ds', this.value)"></td>
                         <td><input type="text" data-bind="${pt.bed}-consult" value="${globalState[pt.bed].consult}" oninput="handleStateChange('${pt.bed}', 'consult', this.value)"></td>
-                        <td><input type="text" data-bind="${pt.bed}-hc2" value="${globalState[pt.bed].hc2}" oninput="handleStateChange('${pt.bed}', 'hc2', this.value)" placeholder="H/C2"><input type="text" data-bind="${pt.bed}-hc5" value="${globalState[pt.bed].hc5}" oninput="handleStateChange('${pt.bed}', 'hc5', this.value)" placeholder="H/C5"></td>
+                        <td><input type="text" data-bind="${pt.bed}-hc2" value="${globalState[pt.bed].hc2}" oninput="handleStateChange('${pt.bed}', 'hc2', this.value)" placeholder="H/C2"><input type="text" data-bind="${pt.bed}-hc5" value="${globalState[pt.bed].hc5}" oninput="handleStateChange('${pt.bed}', 'hc5', this.value)" placeholder="H/C5" style="margin-top:4px;"></td>
                         <td><input type="text" data-bind="${pt.bed}-lab" value="${globalState[pt.bed].lab}" oninput="handleStateChange('${pt.bed}', 'lab', this.value)"></td>
                         <td><textarea data-bind="${pt.bed}-text" oninput="handleStateChange('${pt.bed}', 'text', this.value)">${globalState[pt.bed].text}</textarea></td>
                     </tr>`;
@@ -507,13 +519,13 @@
         function switchView(viewName) {
             document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`nav-${viewName}`).classList.add('active');
-            ['worklist', 'workcard', 'neworder'].forEach(v => document.getElementById(`view-${v}`).style.display = 'none');
+            ['worklist', 'workcard', 'neworder', 'history'].forEach(v => document.getElementById(`view-${v}`).style.display = 'none');
             
             if(viewName === 'workcard') renderSingleCard(currentBedIndex);
             document.getElementById(`view-${viewName}`).style.display = 'block';
         }
 
-        // --- ระบบ Canvas วาดเขียนอิสระ + ทรงเรขาคณิต ---
+        // --- Canvas Engine ---
         function setupCanvas(canvasId, bed) {
             const canvas = document.getElementById(canvasId);
             if (!canvas || canvas.getBoundingClientRect().width === 0) return;
@@ -530,11 +542,11 @@
                 isDrawing = true; startX = e.offsetX; startY = e.offsetY;
                 snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 ctx.beginPath(); ctx.moveTo(startX, startY);
-                if (currentTool === 'eraser') { ctx.globalCompositeOperation = 'destination-out'; ctx.lineWidth = currentSize * 8; }
+                if (currentTool === 'eraser') { ctx.globalCompositeOperation = 'destination-out'; ctx.lineWidth = currentSize * 10; }
                 else {
                     ctx.globalCompositeOperation = 'source-over'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
                     ctx.strokeStyle = currentTool === 'highlighter' ? currentColor + '44' : currentColor;
-                    ctx.fillStyle = currentColor; ctx.lineWidth = currentTool === 'highlighter' ? currentSize * 4 : currentSize;
+                    ctx.fillStyle = currentColor; ctx.lineWidth = currentTool === 'highlighter' ? currentSize * 6 : currentSize;
                 }
                 e.preventDefault();
             });
@@ -555,16 +567,15 @@
         }
 
         function clearNotePrompt(bed) {
-            Swal.fire({ title: 'ยืนยันการลบ?', text: "ลบกระดานวาดของเตียงนี้ (ข้อความพิมพ์ไม่หาย)", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ลบทิ้ง' }).then((r) => {
+            Swal.fire({ title: 'ยืนยันลบกระดาน?', text: "ลบกระดานวาดของเตียงนี้ (ข้อความพิมพ์และรูปถ่ายจะไม่หาย)", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ลบทิ้ง', cancelButtonText: 'ยกเลิก' }).then((r) => {
                 if (r.isConfirmed) {
                     globalState[bed].canvas = null; globalState[bed].stampCount = 0; globalState[bed].lastUpdate = Date.now();
-                    document.querySelectorAll(`canvas[id$="-${bed}"]`).forEach(c => c.getContext('2d').clearRect(0,0, c.width, c.height));
+                    document.querySelectorAll(`canvas[id$="-${bed}"]`).forEach(c => {if(c.getContext) c.getContext('2d').clearRect(0,0, c.width, c.height);});
                     triggerCloudSync(); Swal.fire('ลบแล้ว!', '', 'success');
                 }
             });
         }
 
-        // --- ระบบ Anatomy (แบบ Grid ทับกันไม่ได้) ---
         function prepareAnatomy(bed, canvasId) { activeBed = bed; activeCanvasId = canvasId; document.getElementById('anatomy-modal').style.display = 'flex'; }
         function stampAnatomy(part) {
             if(!activeCanvasId) return;
