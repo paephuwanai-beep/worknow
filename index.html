@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPD Handover Note - PTform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Sarabun', sans-serif; 
+            background-color: #f0f2f5; 
+            padding: 20px; 
+            margin: 0;
+        }
+        h2 { text-align: center; color: #333; }
+        #loader { text-align: center; margin-top: 50px; font-size: 1.2em; color: #666; }
+        
+        .patient-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .patient-header {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #0056b3;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 5px;
+        }
+        .patient-details {
+            font-size: 0.95em;
+            color: #444;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+        }
+        
+        /* พื้นที่สำหรับจดโน้ตด้วย Apple Pencil */
+        .canvas-container {
+            position: relative;
+            width: 100%;
+        }
+        canvas {
+            border: 1.5px solid #dcdcdc;
+            border-radius: 8px;
+            width: 100%;
+            height: 250px;
+            background-color: #fafdfa;
+            touch-action: none; /* สำคัญมาก: ป้องกันไม่ให้หน้าจอดึงเลื่อนเวลาใช้ปากกาเขียน */
+            cursor: crosshair;
+        }
+        .clear-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ff4d4d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            font-size: 0.8em;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>ใบรับเวร (อ้างอิงจาก PTform)</h2>
+    <div id="loader">กำลังโหลดข้อมูลผู้ป่วยจาก Google Sheets...</div>
+    <div id="patient-container"></div>
+
+    <script>
+        // *** นำ URL ของ Web App ที่ Deploy ไว้มาใส่ตรงนี้ ***
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbyYMVEe9dh_hosNGcLgU4LePj_fCGO-JqVBJK6hWhPSkqHBich5XfeEI6-lSYt2gWe_/exec';
+
+        async function fetchPatients() {
+            try {
+                const response = await fetch(GAS_URL);
+                const data = await response.json();
+                
+                const container = document.getElementById('patient-container');
+                const loader = document.getElementById('loader');
+                loader.style.display = 'none'; // ซ่อนข้อความกำลังโหลด
+                
+                data.forEach((pt, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'patient-card';
+                    
+                    // จัดการข้อความว่าง
+                    const dx = pt.diagnosis ? pt.diagnosis : '-';
+                    const rec = pt.rec ? pt.rec : '-';
+                    const lab = pt.lab ? pt.lab : '-';
+                    
+                    card.innerHTML = `
+                        <div class="patient-header">
+                            เตียง ${pt.bed} | ${pt.name} (HN: ${pt.hn})
+                        </div>
+                        <div class="patient-details">
+                            <div><strong>Diagnosis:</strong> ${dx}</div>
+                            <div><strong>LAB:</strong> ${lab}</div>
+                            <div style="grid-column: span 2;"><strong>REC/Order:</strong> ${rec}</div>
+                        </div>
+                        <div class="canvas-container">
+                            <button class="clear-btn" onclick="clearCanvas('canvas-${index}')">ลบโน้ต</button>
+                            <canvas id="canvas-${index}"></canvas>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                    
+                    // ตั้งค่า Canvas สำหรับการ์ดใบนี้
+                    setupCanvas(`canvas-${index}`);
+                });
+            } catch (error) {
+                document.getElementById('loader').innerText = 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
+                console.error("Error fetching data: ", error);
+            }
+        }
+
+        function setupCanvas(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            
+            // ทำให้ขนาดของ canvas ตรงกับขนาดจริงที่แสดงผล ป้องกันเส้นเพี้ยน
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+
+            let isDrawing = false;
+
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = '#004080'; // สีน้ำเงินเข้มสำหรับปากกา
+
+            // ใช้ pointerdown เพื่อให้รองรับ Apple Pencil ได้ดี
+            canvas.addEventListener('pointerdown', (e) => {
+                // อนุญาตให้เขียนเมื่อเป็น pen (Apple Pencil) หรือใช้เมาส์คลิกทดสอบ
+                if (e.pointerType === 'pen' || e.pointerType === 'mouse') {
+                    isDrawing = true;
+                    ctx.beginPath();
+                    ctx.moveTo(e.offsetX, e.offsetY);
+                    e.preventDefault();
+                }
+            });
+
+            canvas.addEventListener('pointermove', (e) => {
+                if (!isDrawing) return;
+                ctx.lineTo(e.offsetX, e.offsetY);
+                ctx.stroke();
+                e.preventDefault();
+            });
+
+            const stopDrawing = () => {
+                if (isDrawing) {
+                    ctx.closePath();
+                    isDrawing = false;
+                }
+            };
+
+            canvas.addEventListener('pointerup', stopDrawing);
+            canvas.addEventListener('pointerout', stopDrawing);
+            canvas.addEventListener('pointercancel', stopDrawing);
+        }
+
+        // ฟังก์ชันสำหรับลบกระดาน
+        function clearCanvas(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // เรียกใช้งานเมื่อโหลดหน้าเว็บ
+        window.onload = fetchPatients;
+    </script>
+</body>
+</html>
