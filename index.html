@@ -56,7 +56,7 @@
         .canvas-wrapper { position: relative; background-color: #fafafa; background-image: linear-gradient(#f0f0f0 1px, transparent 1px), linear-gradient(90deg, #f0f0f0 1px, transparent 1px); background-size: 20px 20px; border: 1px solid var(--border-color); border-radius: 6px; height: 300px; overflow: hidden; }
         canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
 
-        .photo-grid { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; }
+        .photo-grid { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; margin-top:10px; }
         .photo-thumb { position: relative; width: 80px; height: 80px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); flex-shrink: 0; }
         .photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
         .photo-del { position: absolute; top: 2px; right: 2px; background: rgba(239,68,68,0.8); color: #fff; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 0.7rem; cursor: pointer; }
@@ -82,13 +82,16 @@
         .card-view-selector { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 15px; margin-bottom: 15px; }
         .bed-pill { background: var(--bg-card); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 20px; cursor: pointer; white-space: nowrap; font-weight: 500; }
         .bed-pill.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
 </head>
 <body>
 
     <div id="loading-screen">
         <i class="fa-solid fa-notes-medical fa-beat" style="font-size: 3.5rem; color: var(--primary);"></i>
-        <div class="loading-text">กำลังซิงก์ข้อมูล... <span id="load-percent">0%</span></div>
+        <div class="loading-text">กำลังโหลดข้อมูล PTform... <span id="load-percent">0%</span></div>
         <div class="progress-container"><div class="progress-bar" id="load-bar"></div></div>
     </div>
 
@@ -96,16 +99,17 @@
         <div class="header-content">
             <div class="brand">
                 <i class="fa-solid fa-notes-medical" style="color:var(--primary);"></i>
-                <div class="brand-text">Handover IPD3 <span id="patient-count" class="patient-count-badge"><i class="fa-solid fa-spinner fa-spin"></i></span></div>
+                <div class="brand-text">Handover IPD3 <span id="patient-count" class="patient-count-badge">0 ราย</span></div>
             </div>
             <div style="display:flex; gap:10px;">
-                <span id="sync-status" style="color:#64748b; font-size:0.8rem; align-self:center;"><i class="fa-solid fa-cloud-check"></i></span>
-                <button class="btn-outline" style="border-color:#94a3b8; color:#cbd5e1;" onclick="fetchDataFromServer(true, false)" title="รีเฟรช"><i class="fa-solid fa-rotate-right"></i></button>
+                <span id="sync-status" style="color:#10b981; font-size:0.8rem; align-self:center;"><i class="fa-solid fa-memory"></i> บันทึกในเครื่อง</span>
+                <button class="btn-outline" style="border-color:#94a3b8; color:#cbd5e1;" onclick="fetchDataFromServer()" title="รีเฟรชข้อมูล"><i class="fa-solid fa-rotate-right"></i></button>
                 <button class="btn-outline" onclick="openSaveModal()"><i class="fa-solid fa-cloud-arrow-up"></i> บันทึกเวร</button>
             </div>
         </div>
     </header>
 
+    <!-- Toolbar วาดรูป -->
     <div class="pen-toolbar">
         <button class="tool-btn active" id="tool-pen" onclick="setTool('pen')" title="ปากกา"><i class="fa-solid fa-pen"></i></button>
         <button class="tool-btn" id="tool-highlighter" onclick="setTool('highlighter')" title="ไฮไลท์"><i class="fa-solid fa-highlighter"></i></button>
@@ -121,10 +125,11 @@
         <div class="color-dot" style="background:#16a34a;" onclick="setColor('#16a34a', this)"></div>
         <div class="color-dot" style="background:#1e293b;" onclick="setColor('#1e293b', this)"></div>
         <div style="width: 1px; height: 20px; background: var(--border-color); margin: 0 5px;"></div>
-        <input type="range" id="pen-size" class="size-slider" min="1" max="20" value="2" onchange="updateSize(this.value)" title="ปรับขนาดปากกา">
+        <input type="range" id="pen-size" class="size-slider" min="1" max="20" value="2" onchange="updateSize(this.value)">
     </div>
 
     <div class="container">
+        <!-- Views ต่างๆ -->
         <div id="view-worklist"></div>
         <div id="view-workcard" style="display: none;">
             <div class="card-view-selector" id="bed-pills"></div>
@@ -147,7 +152,7 @@
             <div class="patient-card">
                 <div style="display:flex; justify-content:space-between;">
                     <h3 style="color:var(--primary);"><i class="fa-solid fa-clock-rotate-left"></i> ประวัติบันทึกเวร (Cloud)</h3>
-                    <button class="btn-outline" style="color:var(--primary); border-color:var(--primary); font-size:0.8rem;" onclick="loadCloudHistory()"><i class="fa-solid fa-rotate"></i> อัปเดต</button>
+                    <button class="btn-outline" style="color:var(--primary); border-color:var(--primary); font-size:0.8rem;" onclick="loadCloudHistory()"><i class="fa-solid fa-rotate"></i> โหลดประวัติ</button>
                 </div>
                 <div style="overflow-x: auto; margin-top: 15px;">
                     <table class="order-table">
@@ -166,6 +171,7 @@
         <button class="nav-item" id="nav-history" onclick="switchView('history')"><i class="fa-solid fa-cloud"></i> History</button>
     </nav>
 
+    <!-- Modal Anatomy -->
     <div class="anatomy-modal" id="anatomy-modal">
         <div style="background:#fff; padding:25px; border-radius:8px; width:90%; max-width:400px;">
             <div style="display:flex; justify-content:space-between;">
@@ -184,16 +190,13 @@
     </div>
 
     <script>
-        // ----------------------------------------------------------------------------------
-        // นำ URL ตัวใหม่ล่าสุดมาวางแทนที่ด้านล่างนี้เลยครับ
+        // *** วาง URL ของ Google Apps Script ของคุณที่นี่ ***
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbzxYnKisiqrywAuCvHnSMYnobu6DXOtJ3SmJRskHW-KPfmAwTFl3Igyr7PJKi-bYvmW/exec'; 
-        // ----------------------------------------------------------------------------------
 
         let patientsData = [];
         let globalState = {}; 
         let currentTool = 'pen', currentColor = '#2563eb', currentSize = 2, isFillShape = false;
         let activeBed = null, activeCanvasId = null, currentBedIndex = 0, newOrderViewMode = 'card';
-        let syncTimeout = null;
 
         const anatomyImages = {
             body: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%2364748b" stroke-width="2"><circle cx="50" cy="15" r="8"/><path d="M30 35h40v40H30zM30 35l-15 20M70 35l15 20M40 75v20M60 75v20"/></svg>',
@@ -204,6 +207,7 @@
             abdomen: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%2364748b" stroke-width="2"><rect x="20" y="20" width="60" height="60" rx="15"/></svg>'
         };
 
+        // --- ตั้งค่าเครื่องมือ ---
         function setTool(tool) {
             currentTool = tool; document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`tool-${tool}`).classList.add('active');
@@ -217,89 +221,54 @@
             isFillShape = !isFillShape; document.getElementById('tool-fill').classList.toggle('active', isFillShape);
         }
 
-        async function fetchDataFromServer(showLoader = true, isSilentSync = false) {
+        // --- ระบบโหลดข้อมูล (เน้นความเสถียร ไม่ซิงก์พร่ำเพรื่อ) ---
+        async function fetchDataFromServer() {
             const loader = document.getElementById('loading-screen');
             const pBar = document.getElementById('load-bar');
             const pText = document.getElementById('load-percent');
+            loader.style.display = 'flex'; pBar.style.width = '20%'; pText.innerText = '20%';
 
-            if (showLoader && !isSilentSync) {
-                loader.style.display = 'flex';
-                pBar.style.width = '10%'; pText.innerText = '10%';
+            // ดึงข้อมูลที่เคยทำค้างไว้ในเครื่องมาใช้งานก่อนทันที
+            const localCachedState = localStorage.getItem('ipd3_local_state');
+            if(localCachedState) {
+                try { globalState = JSON.parse(localCachedState); } catch(e){}
             }
 
-            let percent = 10;
-            const interval = setInterval(() => {
-                if(percent < 85 && showLoader && !isSilentSync) { 
-                    percent += 5; pBar.style.width = percent + '%'; pText.innerText = percent + '%'; 
-                }
-            }, 50);
-
             try {
+                // ดึงรายชื่อผู้ป่วยจาก Google Sheet
                 const response = await fetch(GAS_URL);
                 if (!response.ok) throw new Error('Network error');
+                pBar.style.width = '70%'; pText.innerText = '70%';
                 
                 const resData = await response.json();
-                if(resData.error) throw new Error(resData.error);
+                if (resData.error) throw new Error(resData.error);
                 
-                if (Array.isArray(resData)) patientsData = resData;
-                else patientsData = resData.patients || [];
+                // ตรวจสอบโครงสร้าง JSON
+                patientsData = Array.isArray(resData) ? resData : (resData.patients || []);
                 
-                const remoteState = resData.liveState || {};
-                let needRender = false;
-                
+                // รวม State (เตรียมข้อมูลสำหรับเตียงใหม่ที่เพิ่งแอดเข้ามา)
                 patientsData.forEach(pt => {
                     if(!globalState[pt.bed]) {
                         globalState[pt.bed] = { 
-                            text: '', canvas: null, stampCount: 0, photos: [], lastUpdate: 0,
+                            text: '', canvas: null, stampCount: 0, photos: [],
                             io: pt.rec !== '-' ? pt.rec : '', film: pt.film !== '-' ? pt.film : '',
                             ds: pt.ds !== '-' ? pt.ds : '', consult: pt.consult !== '-' ? pt.consult : '',
                             hc2: pt.hc2 !== '-' ? pt.hc2 : '', hc5: pt.hc5 !== '-' ? pt.hc5 : '', lab: pt.lab !== '-' ? pt.lab : ''
                         };
-                        needRender = true;
-                    }
-                    if(remoteState[pt.bed] && remoteState[pt.bed].lastUpdate > globalState[pt.bed].lastUpdate) {
-                        globalState[pt.bed] = remoteState[pt.bed]; needRender = true;
                     }
                 });
 
-                clearInterval(interval);
-                if(showLoader && !isSilentSync) {
-                    pBar.style.width = '100%'; pText.innerText = '100%';
-                    setTimeout(() => { loader.style.display = 'none'; }, 300);
-                }
-                
-                if(needRender || (showLoader && !isSilentSync)) initApp();
-                document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-check" style="color:#10b981;"></i> ซิงก์แล้ว';
-                
+                pBar.style.width = '100%'; pText.innerText = '100%';
+                setTimeout(() => { loader.style.display = 'none'; initApp(); }, 400);
+
             } catch (err) {
-                clearInterval(interval);
-                if(showLoader && !isSilentSync) loader.style.display = 'none';
-                
+                loader.style.display = 'none';
                 if (patientsData.length === 0) {
-                    patientsData = [ { bed:"01", an:"AN-0000", name:"(ไม่มีข้อมูล) โหลดไม่สำเร็จ", dx:"-", rec:"-", dtx:"-", hct:"-", film:"-", ds:"-", consult:"-", nebulizer1:"-", nebulizer2:"-", onedayStat:"-", hc2:"-", hc5:"-", lab:"-" } ];
-                    patientsData.forEach(pt => {
-                        if(!globalState[pt.bed]) globalState[pt.bed] = { text: '', canvas: null, stampCount: 0, photos: [], lastUpdate: 0, io:'', film:'', ds:'', consult:'', hc2:'', hc5:'', lab:'' };
-                    });
-                    initApp();
+                    Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อ Google Sheet ได้ กรุณาตรวจสอบ URL', 'error');
+                } else {
+                    initApp(); // โหลดต่อด้วยข้อมูลใน Local Storage
                 }
-                if(!isSilentSync) Swal.fire('โหลดข้อมูลล้มเหลว', 'ตรวจสอบ Web App URL ในโค้ดว่าถูกต้องหรือไม่', 'error');
-                document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-xmark" style="color:#ef4444;"></i> ออฟไลน์';
             }
-        }
-
-        setInterval(() => fetchDataFromServer(false, true), 10000);
-
-        function triggerCloudSync() {
-            clearTimeout(syncTimeout);
-            document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> อัปโหลด...';
-            syncTimeout = setTimeout(async () => {
-                try {
-                    await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({action: 'sync_live', state: globalState}) });
-                    document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-check" style="color:#10b981;"></i> ซิงก์แล้ว';
-                } catch(e) {
-                    document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-xmark" style="color:#ef4444;"></i> ผิดพลาด';
-                }
-            }, 1500);
         }
 
         function initApp() {
@@ -308,10 +277,15 @@
             if(document.getElementById('view-workcard').style.display === 'block') renderSingleCard(currentBedIndex);
         }
 
+        // --- บันทึกข้อมูลลงในเครื่อง (Local Storage) ตลอดเวลาที่พิมพ์/วาด ---
+        function saveToLocal() {
+            localStorage.setItem('ipd3_local_state', JSON.stringify(globalState));
+        }
+
         function handleStateChange(bed, field, val) {
-            globalState[bed][field] = val; globalState[bed].lastUpdate = Date.now();
+            globalState[bed][field] = val;
             document.querySelectorAll(`[data-bind="${bed}-${field}"]`).forEach(el => { if (el.value !== val) el.value = val; });
-            triggerCloudSync();
+            saveToLocal();
         }
         
         function appendToNote(bed, label, text) {
@@ -320,16 +294,18 @@
             handleStateChange(bed, 'text', currentText + (currentText ? '\n' : '') + `${label}: ${text}`);
         }
 
+        // --- ระบบกล้องถ่ายภาพ & แชร์ไลน์ ---
         async function handlePhotoUpload(bed, input) {
             const files = input.files;
             if(!globalState[bed].photos) globalState[bed].photos = [];
-            if(globalState[bed].photos.length + files.length > 4) { Swal.fire('คำเตือน', 'แนบรูปได้สูงสุด 4 รูป', 'warning'); return; }
-            Swal.fire({title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+            if(globalState[bed].photos.length + files.length > 4) { Swal.fire('เตือน', 'แนบรูปได้สูงสุด 4 รูปต่อเตียง', 'warning'); return; }
+            Swal.fire({title: 'ประมวลผลรูปภาพ...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
             
             for(let i=0; i<files.length; i++) {
-                const base64 = await compressImage(files[i]); globalState[bed].photos.push(base64);
+                const base64 = await compressImage(files[i]); 
+                globalState[bed].photos.push(base64);
             }
-            globalState[bed].lastUpdate = Date.now(); triggerCloudSync(); Swal.close(); renderPhotosDOM(bed);
+            saveToLocal(); Swal.close(); renderPhotosDOM(bed);
         }
 
         function compressImage(file) {
@@ -362,8 +338,7 @@
         function deletePhoto(bed, idx) {
             Swal.fire({title: 'ลบรูปภาพ?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ลบ', cancelButtonText: 'ยกเลิก'}).then(r => {
                 if(r.isConfirmed){
-                    globalState[bed].photos.splice(idx, 1); globalState[bed].lastUpdate = Date.now();
-                    triggerCloudSync(); renderPhotosDOM(bed);
+                    globalState[bed].photos.splice(idx, 1); saveToLocal(); renderPhotosDOM(bed);
                 }
             });
         }
@@ -371,8 +346,9 @@
         async function shareToLine(bed) {
             const pt = patientsData.find(p => p.bed === bed); const state = globalState[bed];
             const text = `ส่งเวรเตียง ${pt.bed}\nชื่อ: ${pt.name}\nDiagnosis: ${pt.dx}\n${state.text ? 'Note: '+state.text : ''}`;
-            if(!navigator.share) { Swal.fire('ไม่รองรับ', 'เบราว์เซอร์นี้ไม่รองรับระบบแชร์', 'error'); return; }
-            Swal.fire({title: 'กำลังเตรียมไฟล์...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+            if(!navigator.share) { Swal.fire('ไม่รองรับ', 'เบราว์เซอร์ของอุปกรณ์นี้ไม่รองรับระบบแชร์ไฟล์โดยตรง', 'error'); return; }
+            
+            Swal.fire({title: 'กำลังเตรียมรูปภาพ...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
             const filesArray = [];
             if(state.photos && state.photos.length > 0) {
                 for(let i=0; i<state.photos.length; i++) {
@@ -402,6 +378,7 @@
                 </div>`;
         }
 
+        // --- Render UI (ข้อมูลผู้ป่วย) ---
         function createInfoGrid(pt) {
             return `
                 <div class="info-grid">
@@ -534,16 +511,17 @@
             ['worklist', 'workcard', 'neworder', 'history'].forEach(v => document.getElementById(`view-${v}`).style.display = 'none');
             
             if(viewName === 'workcard') renderSingleCard(currentBedIndex);
+            if(viewName === 'history') loadCloudHistory();
             document.getElementById(`view-${viewName}`).style.display = 'block';
         }
 
-        // --- Canvas Engine ---
+        // --- Canvas Engine (วาดเขียน) ---
         function setupCanvas(canvasId, bed) {
             const canvas = document.getElementById(canvasId);
-            if (!canvas || canvas.getBoundingClientRect().width === 0) return;
+            if (!canvas) return;
             const ctx = canvas.getContext('2d');
             
-            const setSize = () => {
+            const enforceSize = () => {
                 const rect = canvas.parentElement.getBoundingClientRect();
                 if(rect.width > 0 && canvas.width !== Math.floor(rect.width)) {
                     canvas.width = rect.width; canvas.height = rect.height;
@@ -552,12 +530,12 @@
                     }
                 }
             };
-            setSize();
+            enforceSize();
 
             let isDrawing = false, startX, startY, snapshot;
             canvas.addEventListener('pointerdown', (e) => {
                 if (e.pointerType !== 'pen' && e.pointerType !== 'mouse') return;
-                setSize();
+                enforceSize();
                 isDrawing = true; startX = e.offsetX; startY = e.offsetY;
                 snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 ctx.beginPath(); ctx.moveTo(startX, startY);
@@ -581,16 +559,16 @@
                 e.preventDefault();
             });
 
-            const stopDraw = () => { if (isDrawing) { isDrawing = false; globalState[bed].canvas = canvas.toDataURL(); globalState[bed].lastUpdate = Date.now(); triggerCloudSync(); } };
+            const stopDraw = () => { if (isDrawing) { isDrawing = false; globalState[bed].canvas = canvas.toDataURL(); saveToLocal(); } };
             canvas.addEventListener('pointerup', stopDraw); canvas.addEventListener('pointerleave', stopDraw);
         }
 
         function clearNotePrompt(bed) {
-            Swal.fire({ title: 'ยืนยันลบกระดาน?', text: "เฉพาะรูปลายเส้นและแบบฟอร์มบนกระดานจะหายไป", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ลบทิ้ง', cancelButtonText: 'ยกเลิก' }).then((r) => {
+            Swal.fire({ title: 'ยืนยันลบกระดาน?', text: "ลายเส้นและการ์ตูน Anatomy จะถูกลบ (ข้อความพิมพ์ไม่หาย)", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ลบทิ้ง', cancelButtonText: 'ยกเลิก' }).then((r) => {
                 if (r.isConfirmed) {
-                    globalState[bed].canvas = null; globalState[bed].stampCount = 0; globalState[bed].lastUpdate = Date.now();
+                    globalState[bed].canvas = null; globalState[bed].stampCount = 0; saveToLocal();
                     document.querySelectorAll(`canvas[id$="-${bed}"]`).forEach(c => {if(c.getContext) c.getContext('2d').clearRect(0,0, c.width, c.height);});
-                    triggerCloudSync(); Swal.fire('ลบแล้ว!', '', 'success');
+                    Swal.fire('ลบแล้ว!', '', 'success');
                 }
             });
         }
@@ -608,55 +586,61 @@
             const img = new Image();
             img.onload = () => {
                 ctx.globalAlpha = 0.5; ctx.drawImage(img, x, y, imgSize, imgSize); ctx.globalAlpha = 1.0;
-                globalState[activeBed].stampCount = count + 1; globalState[activeBed].canvas = canvas.toDataURL(); globalState[activeBed].lastUpdate = Date.now();
-                triggerCloudSync(); document.getElementById('anatomy-modal').style.display = 'none';
+                globalState[activeBed].stampCount = count + 1; globalState[activeBed].canvas = canvas.toDataURL(); saveToLocal();
+                document.getElementById('anatomy-modal').style.display = 'none';
             };
             img.src = anatomyImages[part];
         }
 
-        // --- ระบบบันทึกประวัติ ---
+        // --- ระบบส่งเวร & ดึงประวัติเข้า Cloud ---
         function openSaveModal() {
             Swal.fire({
                 title: 'บันทึกข้อมูลเวรลงระบบ', input: 'text', inputPlaceholder: 'กรอกชื่อพยาบาลเวร...',
-                showCancelButton: true, confirmButtonText: 'บันทึก', cancelButtonText: 'ยกเลิก', confirmButtonColor: 'var(--primary)',
+                showCancelButton: true, confirmButtonText: 'อัปโหลดเข้า Cloud', cancelButtonText: 'ยกเลิก', confirmButtonColor: 'var(--primary)',
                 inputValidator: (val) => { if (!val) return 'กรุณากรอกชื่อก่อนบันทึก!' }
             }).then(r => { if (r.isConfirmed) confirmSaveCloud(r.value); });
         }
 
         async function confirmSaveCloud(nurseName) {
             const record = { id: Date.now(), time: new Date().toLocaleString('th-TH'), nurse: nurseName, count: patientsData.length, state: globalState };
-            Swal.fire({title: 'กำลังอัปโหลด...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+            Swal.fire({title: 'กำลังอัปโหลด...', text: 'กรุณารอสักครู่ ห้ามปิดหน้าจอ', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
             try {
                 await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({action: 'save_history', data: record}) });
-                Swal.fire('สำเร็จ!', 'บันทึกส่งเวรเข้าประวัติแล้ว', 'success');
-                switchView('history'); loadCloudHistory();
-            } catch(e) { Swal.fire('ข้อผิดพลาด', 'อัปโหลดไม่สำเร็จ', 'error'); }
+                
+                // เคลียร์กระดานและเตรียมรับเวรใหม่
+                globalState = {}; localStorage.removeItem('ipd3_local_state');
+                
+                Swal.fire('สำเร็จ!', 'บันทึกส่งเวรเข้าประวัติเรียบร้อยแล้ว', 'success');
+                switchView('history');
+            } catch(e) { Swal.fire('ข้อผิดพลาด', 'อัปโหลดไม่สำเร็จ กรุณาลองใหม่', 'error'); }
         }
 
         async function loadCloudHistory() {
             const tbody = document.getElementById('history-list');
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> โหลดประวัติ...</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> ดึงประวัติล่าสุดจาก Cloud...</td></tr>`;
             try {
                 const res = await fetch(GAS_URL + '?action=history'); const history = await res.json();
                 tbody.innerHTML = '';
-                if(history.length === 0) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">ยังไม่มีประวัติ</td></tr>`; return; }
+                if(history.length === 0) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">ยังไม่มีประวัติในระบบ</td></tr>`; return; }
                 history.reverse().forEach(h => {
                     tbody.innerHTML += `<tr>
                         <td>${h.time}</td><td style="color:var(--primary); font-weight:500;">${h.nurse}</td><td>${h.count} เตียง</td>
-                        <td><button class="btn-outline" style="background:var(--accent); font-size:0.8rem;" onclick='restoreHistoryState(${JSON.stringify(h.state).replace(/'/g, "&#39;")})'>เปิดดู</button></td>
+                        <td><button class="btn-outline" style="background:var(--accent); font-size:0.8rem;" onclick='restoreHistoryState(${JSON.stringify(h.state).replace(/'/g, "&#39;")})'>โหลดประวัติ</button></td>
                     </tr>`;
                 });
-            } catch(e) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">โหลดประวัติล้มเหลว</td></tr>`; }
+            } catch(e) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">เชื่อมต่อ Cloud ล้มเหลว</td></tr>`; }
         }
 
         function restoreHistoryState(savedState) {
             if(!savedState) return;
-            Swal.fire({ title: 'เปิดประวัติเวร?', text: "ข้อมูลปัจจุบันจะถูกแทนที่ด้วยข้อมูลจากประวัติ", icon: 'warning', showCancelButton: true, confirmButtonColor: '#2563eb', confirmButtonText: 'ตกลง', cancelButtonText: 'ยกเลิก' }).then((r) => {
+            Swal.fire({ title: 'ต้องการเปิดประวัติเวรนี้?', text: "ข้อมูลปัจจุบันที่ยังไม่ได้บันทึกจะหายไป", icon: 'warning', showCancelButton: true, confirmButtonColor: '#2563eb', confirmButtonText: 'ตกลง', cancelButtonText: 'ยกเลิก' }).then((r) => {
                 if(r.isConfirmed) {
-                    globalState = savedState; triggerCloudSync(); initApp(); switchView('worklist'); Swal.fire('สำเร็จ', 'โหลดข้อมูลประวัติเรียบร้อย', 'success');
+                    globalState = savedState; saveToLocal(); initApp(); switchView('worklist'); Swal.fire('สำเร็จ', 'โหลดประวัติเวรมาแสดงผลแล้ว', 'success');
                 }
             });
         }
+
+        window.onload = () => fetchDataFromServer(true);
     </script>
 </body>
 </html>
