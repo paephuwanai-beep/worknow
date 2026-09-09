@@ -65,13 +65,12 @@
         .input-group label { font-size: 0.85rem; font-weight: 600; color: var(--primary); }
         .input-group input, .input-group textarea { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-family: inherit; font-size: 0.95rem; color: var(--text-main);}
 
-        /* ---------------- ตารางแก้ไขข้อความตัดบรรทัดอัตโนมัติ ---------------- */
+        /* ---------------- ตาราง ---------------- */
         .order-table-wrapper { overflow-x: auto; background: #fff; border: 1px solid var(--border-color); border-radius: 8px; margin-top: 15px;}
         .order-table { width: 100%; border-collapse: collapse; min-width: 1000px; }
         .order-table th, .order-table td { padding: 8px; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); font-size: 0.9rem; vertical-align: top;}
         .order-table th { background: #f8fafc; color: var(--primary); font-weight: 600; white-space: nowrap; text-align: center;}
         
-        /* เปลี่ยน Input เป็น Textarea ซ่อนขอบ ให้ขยายอัตโนมัติ */
         .order-table textarea { 
             width: 100%; 
             border: none; 
@@ -79,7 +78,7 @@
             font-family: inherit; 
             font-size: 0.9rem;
             outline: none; 
-            resize: none; /* ห้ามดึงยืดเอง สคริปต์จะทำให้ */
+            resize: none; 
             overflow: hidden; 
             color: var(--text-main); 
             padding: 4px;
@@ -90,6 +89,16 @@
         }
         .order-table textarea:focus { background: #f0f9ff; border-radius: 4px; }
         .order-table .static-text { padding: 4px; line-height: 1.4; word-wrap: break-word; white-space: pre-line;}
+
+        /* CSS สำหรับ Textarea ที่เป็น Readonly (ห้ามแก้ไขในหน้า Work List) */
+        .order-table textarea.readonly-area {
+            background-color: transparent !important;
+            cursor: default;
+        }
+        .order-table textarea.readonly-area:focus {
+            background-color: transparent !important;
+            outline: none !important;
+        }
 
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px 0; z-index: 200; box-shadow: 0 -2px 10px rgba(0,0,0,0.05);}
         .nav-item { background: none; border: none; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 5px 10px;}
@@ -158,7 +167,7 @@
             </div>
             <!-- มุมมองการ์ด (ดั้งเดิม) -->
             <div id="worklist-cards-view" style="display: block;"></div>
-            <!-- มุมมองตาราง (เพิ่มใหม่ จัดเต็มทุกฟิลด์) -->
+            <!-- มุมมองตาราง -->
             <div id="worklist-table-view" class="order-table-wrapper" style="display: none;">
                 <table class="order-table">
                     <thead>
@@ -173,7 +182,7 @@
                             <th style="min-width: 120px;">Consult</th>
                             <th style="min-width: 100px;">H/C</th>
                             <th style="min-width: 120px;">LAB</th>
-                            <th style="min-width: 180px;">Note</th>
+                            <th style="min-width: 250px;">Note</th>
                         </tr>
                     </thead>
                     <tbody id="worklist-tbody"></tbody>
@@ -281,8 +290,8 @@
 
         // --- ระบบปรับขนาดกล่องข้อความอัตโนมัติ (Auto Resize Textarea) ---
         function autoResize(el) {
-            el.style.height = 'auto'; // รีเซ็ตความสูงก่อน
-            el.style.height = (el.scrollHeight) + 'px'; // ปรับตามเนื้อหา
+            el.style.height = 'auto'; 
+            el.style.height = (el.scrollHeight) + 'px';
         }
         function resizeAllTextareas() {
             document.querySelectorAll('textarea').forEach(el => {
@@ -297,7 +306,13 @@
         function handleStateChange(bed, field, val) {
             globalState[bed][field] = val;
             document.querySelectorAll(`[data-bind="${bed}-${field}"]`).forEach(el => { 
-                if (el.value !== val) el.value = val; 
+                if (el.value !== val) {
+                    el.value = val;
+                    // สั่งให้กล่องข้อความที่ถูกลิงก์ข้อมูล ยืดความสูงตามด้วยถ้าจำเป็น
+                    if (el.tagName === 'TEXTAREA' && el.offsetParent !== null) {
+                        autoResize(el);
+                    }
+                }
             });
             saveToLocal();
         }
@@ -306,7 +321,8 @@
             if (!patientsData) return;
             patientsData.forEach(pt => {
                 const st = globalState[pt.bed];
-                const canvasIds = [`canvas-wl-${pt.bed}`, `canvas-single-${pt.bed}`, `canvas-no-${pt.bed}`];
+                // เพิ่ม ID ของกระดานในหน้า Work List แบบตาราง (canvas-wl-tb-)
+                const canvasIds = [`canvas-wl-${pt.bed}`, `canvas-wl-tb-${pt.bed}`, `canvas-single-${pt.bed}`, `canvas-no-${pt.bed}`];
                 
                 canvasIds.forEach(cid => {
                     const canvas = document.getElementById(cid);
@@ -418,7 +434,7 @@
             
             setTimeout(() => { 
                 syncAllCanvases(); 
-                resizeAllTextareas(); // ปรับขนาดกล่องข้อความทั้งหมดครั้งแรก
+                resizeAllTextareas(); 
             }, 150);
         }
 
@@ -532,7 +548,7 @@
                 </div>`;
         }
 
-        // --- สร้างมุมมอง Work List (เพิ่มตารางจัดเต็ม) ---
+        // --- สร้างมุมมอง Work List (กำหนดตารางให้อ่านได้อย่างเดียว ยกเว้น Note) ---
         function renderWorkList() {
             const cardsContainer = document.getElementById('worklist-cards-view');
             const tbody = document.getElementById('worklist-tbody');
@@ -544,9 +560,10 @@
             
             patientsData.forEach(pt => {
                 const cid = `canvas-wl-${pt.bed}`;
+                // สร้าง ID ของกระดานแยกต่างหากสำหรับตาราง Work list
+                const cidTb = `canvas-wl-tb-${pt.bed}`; 
                 const st = globalState[pt.bed] || {};
                 
-                // รูปแบบการ์ด (เดิม)
                 htmlCards += `
                     <div class="patient-card">
                         <div class="card-header"><span class="bed-badge">เตียง ${pt.bed}</span><span style="font-size:1.25rem; font-weight:600;">${pt.name}</span></div>
@@ -566,7 +583,7 @@
                         </div>
                     </div>`;
 
-                // รูปแบบตาราง Work List (เพิ่มฟิลด์ครบตามการ์ด)
+                // รูปแบบตาราง Work List (เพิ่ม class "readonly-area" และแอตทริบิวต์ "readonly" เพื่อห้ามแก้ไข)
                 htmlTable += `
                     <tr>
                         <td style="font-weight:600; color:var(--primary); text-align:center;">${pt.bed}</td>
@@ -574,22 +591,37 @@
                         <td><div class="static-text">${pt.dx}</div></td>
                         <td><div class="static-text" style="color:#64748b; font-size:0.85rem;">REC: ${pt.rec}<br>STAT: ${pt.onedayStat}</div></td>
                         <td><div class="static-text" style="color:#64748b; font-size:0.85rem;">ยา: ${pt.nebulizer1} ${pt.nebulizer2 !== '-' ? pt.nebulizer2 : ''}<br>DTX: ${pt.dtx} / ${pt.hct}</div></td>
-                        <td><textarea data-bind="${pt.bed}-film" oninput="handleStateChange('${pt.bed}', 'film', this.value); autoResize(this);">${st.film || ''}</textarea></td>
-                        <td><textarea data-bind="${pt.bed}-ds" oninput="handleStateChange('${pt.bed}', 'ds', this.value); autoResize(this);">${st.ds || ''}</textarea></td>
-                        <td><textarea data-bind="${pt.bed}-consult" oninput="handleStateChange('${pt.bed}', 'consult', this.value); autoResize(this);">${st.consult || ''}</textarea></td>
+                        <td><textarea readonly class="readonly-area" data-bind="${pt.bed}-film">${st.film || ''}</textarea></td>
+                        <td><textarea readonly class="readonly-area" data-bind="${pt.bed}-ds">${st.ds || ''}</textarea></td>
+                        <td><textarea readonly class="readonly-area" data-bind="${pt.bed}-consult">${st.consult || ''}</textarea></td>
                         <td>
-                            <textarea data-bind="${pt.bed}-hc2" oninput="handleStateChange('${pt.bed}', 'hc2', this.value); autoResize(this);" placeholder="H/C2" style="border-bottom:1px solid var(--border-color);">${st.hc2 || ''}</textarea>
-                            <textarea data-bind="${pt.bed}-hc5" oninput="handleStateChange('${pt.bed}', 'hc5', this.value); autoResize(this);" placeholder="H/C5">${st.hc5 || ''}</textarea>
+                            <textarea readonly class="readonly-area" data-bind="${pt.bed}-hc2" style="border-bottom:1px dashed #cbd5e1; margin-bottom:4px;">${st.hc2 || ''}</textarea>
+                            <textarea readonly class="readonly-area" data-bind="${pt.bed}-hc5">${st.hc5 || ''}</textarea>
                         </td>
-                        <td><textarea data-bind="${pt.bed}-lab" oninput="handleStateChange('${pt.bed}', 'lab', this.value); autoResize(this);">${st.lab || ''}</textarea></td>
-                        <td><textarea data-bind="${pt.bed}-text" oninput="handleStateChange('${pt.bed}', 'text', this.value); autoResize(this);">${st.text || ''}</textarea></td>
+                        <td><textarea readonly class="readonly-area" data-bind="${pt.bed}-lab">${st.lab || ''}</textarea></td>
+                        <td style="min-width: 250px;">
+                            <textarea data-bind="${pt.bed}-text" class="text-note auto-expand" oninput="handleStateChange('${pt.bed}', 'text', this.value); autoResize(this);" style="width:100%; min-height: 40px; margin-bottom:8px;">${st.text || ''}</textarea>
+                            <div style="display:flex; justify-content:space-between; margin-bottom: 5px;">
+                                <label style="font-size:0.75rem; font-weight:bold; color:var(--primary);"><i class="fa-solid fa-pen"></i> วาด</label>
+                                <div style="display:flex; gap:5px;">
+                                    <button class="btn-outline" style="color:#ef4444; border-color:#ef4444; font-size:0.7rem; padding:2px 6px;" onclick="clearNotePrompt('${pt.bed}')">ลบ</button>
+                                    <button class="btn-outline" style="color:var(--primary); border-color:var(--primary); font-size:0.7rem; padding:2px 6px;" onclick="prepareAnatomy('${pt.bed}', '${cidTb}')">Anatomy</button>
+                                </div>
+                            </div>
+                            <div class="canvas-wrapper" style="height: 150px;"><canvas id="${cidTb}"></canvas></div>
+                        </td>
                     </tr>`;
             });
             
             cardsContainer.innerHTML = htmlCards;
             tbody.innerHTML = htmlTable;
 
-            patientsData.forEach(pt => { setupCanvas(`canvas-wl-${pt.bed}`, pt.bed); renderPhotosDOM(pt.bed); });
+            // ผูกฟังก์ชันวาดรูปให้กับ Canvas ของทุกมุมมองในหน้า Work list
+            patientsData.forEach(pt => { 
+                setupCanvas(`canvas-wl-${pt.bed}`, pt.bed); 
+                setupCanvas(`canvas-wl-tb-${pt.bed}`, pt.bed); 
+                renderPhotosDOM(pt.bed); 
+            });
         }
 
         // --- สลับมุมมองหน้า Work List ---
@@ -601,7 +633,7 @@
             document.getElementById('worklist-table-view').style.display = isCardMode ? 'none' : 'block';
             
             setTimeout(() => { 
-                if (isCardMode) syncAllCanvases(); 
+                syncAllCanvases(); 
                 resizeAllTextareas(); 
             }, 50);
         }
@@ -654,7 +686,7 @@
             setTimeout(() => { syncAllCanvases(); resizeAllTextareas(); }, 50);
         }
 
-        // --- สร้างข้อมูลตารางหน้า New Order (เปลี่ยน Input เป็น Textarea ขยายได้) ---
+        // --- สร้างข้อมูลตารางหน้า New Order (แก้ไขได้ทุกช่อง) ---
         function renderNewOrder() {
             const cardsView = document.getElementById('neworder-cards-view'); 
             const tbody = document.getElementById('neworder-tbody');
@@ -668,7 +700,6 @@
                 const cid = `canvas-no-${pt.bed}`;
                 const st = globalState[pt.bed] || {};
                 
-                // รูปแบบ Card View ของ New Order (ใช้ Textarea)
                 htmlCards += `
                     <div class="patient-card">
                         <div class="card-header" style="border-bottom-color:#fbbf24;"><span class="bed-badge" style="color:#d97706;">เตียง ${pt.bed}</span><span style="font-size:1.25rem; font-weight:600;">${pt.name}</span></div>
@@ -695,7 +726,6 @@
                         </div>
                     </div>`;
 
-                // รูปแบบ Table View ของ New Order เปลี่ยนจาก input เป็น textarea แบบ custom CSS
                 htmlTable += `
                     <tr>
                         <td style="font-weight:600; color:var(--primary); text-align:center;">${pt.bed}</td>
@@ -705,7 +735,7 @@
                         <td><textarea data-bind="${pt.bed}-ds" oninput="handleStateChange('${pt.bed}', 'ds', this.value); autoResize(this);">${st.ds || ''}</textarea></td>
                         <td><textarea data-bind="${pt.bed}-consult" oninput="handleStateChange('${pt.bed}', 'consult', this.value); autoResize(this);">${st.consult || ''}</textarea></td>
                         <td>
-                            <textarea data-bind="${pt.bed}-hc2" oninput="handleStateChange('${pt.bed}', 'hc2', this.value); autoResize(this);" placeholder="H/C2" style="border-bottom:1px solid var(--border-color);">${st.hc2 || ''}</textarea>
+                            <textarea data-bind="${pt.bed}-hc2" oninput="handleStateChange('${pt.bed}', 'hc2', this.value); autoResize(this);" placeholder="H/C2" style="border-bottom:1px dashed #cbd5e1; margin-bottom:4px;">${st.hc2 || ''}</textarea>
                             <textarea data-bind="${pt.bed}-hc5" oninput="handleStateChange('${pt.bed}', 'hc5', this.value); autoResize(this);" placeholder="H/C5">${st.hc5 || ''}</textarea>
                         </td>
                         <td><textarea data-bind="${pt.bed}-lab" oninput="handleStateChange('${pt.bed}', 'lab', this.value); autoResize(this);">${st.lab || ''}</textarea></td>
@@ -744,7 +774,6 @@
             document.getElementById(`view-${viewName}`).style.display = 'block';
 
             if(viewName === 'worklist') {
-                // คงมุมมองเดิมของ worklist ไว้
                 const isCardMode = (workListViewMode === 'card');
                 document.getElementById('worklist-cards-view').style.display = isCardMode ? 'block' : 'none';
                 document.getElementById('worklist-table-view').style.display = isCardMode ? 'none' : 'block';
@@ -760,7 +789,6 @@
                 document.getElementById('neworder-table-view').style.display = isCardMode ? 'none' : 'block';
             }
             
-            // ใช้ setTimeout เสมอเพื่อให้เบราว์เซอร์จัดการ CSS ให้เสร็จก่อน
             setTimeout(() => { 
                 syncAllCanvases(); 
                 resizeAllTextareas(); 
@@ -899,7 +927,7 @@
                 
                 document.querySelectorAll('textarea[data-bind]').forEach(el => {
                     el.value = ''; 
-                    el.style.height = 'auto'; // คืนค่าความสูงเป็นช่องว่างเปล่าๆ
+                    el.style.height = 'auto'; 
                 });
                 syncAllCanvases();
                 
