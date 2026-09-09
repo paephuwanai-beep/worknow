@@ -28,7 +28,7 @@
         .brand { background-color: var(--bg-card); padding: 8px 16px; border-radius: 8px; display: flex; align-items: center; gap: 10px; }
         .brand-text { font-size: 1.2rem; font-weight: 700; color: var(--primary); display: flex; align-items: center;}
         .patient-count-badge { font-size: 0.8rem; background: var(--accent); color: #fff; padding: 2px 10px; border-radius: 12px; margin-left: 10px; font-weight: 500; }
-        .btn-outline { background: transparent; border: 1px solid #fff; color: #fff; padding: 8px 16px; border-radius: 6px; cursor: pointer; display: flex; gap: 6px; align-items: center; }
+        .btn-outline { background: transparent; border: 1px solid #fff; color: #fff; padding: 8px 16px; border-radius: 6px; cursor: pointer; display: flex; gap: 6px; align-items: center; font-family: inherit; font-size: 0.9rem;}
 
         .pen-toolbar { position: sticky; top: 68px; z-index: 90; background: var(--bg-card); border-bottom: 1px solid var(--border-color); padding: 8px 20px; display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .tool-btn { background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 1.1rem; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
@@ -63,13 +63,13 @@
 
         .input-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
         .input-group label { font-size: 0.85rem; font-weight: 600; color: var(--primary); }
-        .input-group input { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-family: inherit; font-size: 0.95rem; }
+        .input-group input { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-family: inherit; font-size: 0.95rem; color: var(--text-main); }
 
         .order-table-wrapper { overflow-x: auto; background: #fff; border: 1px solid var(--border-color); border-radius: 8px; }
         .order-table { width: 100%; border-collapse: collapse; min-width: 800px; }
         .order-table th, .order-table td { padding: 10px; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); font-size: 0.9rem;}
         .order-table th { background: #f8fafc; color: var(--primary); font-weight: 600; white-space: nowrap; }
-        .order-table input, .order-table textarea { width: 100%; border: none; background: transparent; font-family: inherit; outline: none; resize: vertical;}
+        .order-table input, .order-table textarea { width: 100%; border: none; background: transparent; font-family: inherit; outline: none; resize: vertical; color: var(--text-main);}
         .order-table textarea { min-height: 40px; }
 
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px 0; z-index: 200; }
@@ -78,17 +78,23 @@
 
         .anatomy-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:300; align-items:center; justify-content:center; }
         .anatomy-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px; }
-        .anatomy-btn { border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; cursor: pointer; text-align: center; font-size: 0.9rem; font-weight: 600;}
+        .anatomy-btn { border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; cursor: pointer; text-align: center; font-size: 0.9rem; font-weight: 600; background: #fff;}
+        .anatomy-btn:hover { background: #f0f9ff; border-color: var(--primary); }
+        
         .card-view-selector { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 15px; margin-bottom: 15px; }
-        .bed-pill { background: var(--bg-card); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 20px; cursor: pointer; white-space: nowrap; font-weight: 500; }
-        .bed-pill.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .bed-pill { background: var(--bg-card); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 20px; cursor: pointer; white-space: nowrap; font-weight: 500; transition: background 0.2s;}
+        .bed-pill:hover { background: #f0f9ff; }
+        .bed-pill.active { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 600;}
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
 </head>
 <body>
 
     <div id="loading-screen">
         <i class="fa-solid fa-notes-medical fa-beat" style="font-size: 3.5rem; color: var(--primary);"></i>
-        <div class="loading-text">กำลังโหลดข้อมูล... <span id="load-percent">0%</span></div>
+        <div class="loading-text">กำลังซิงก์ข้อมูล... <span id="load-percent">0%</span></div>
         <div class="progress-container"><div class="progress-bar" id="load-bar"></div></div>
     </div>
 
@@ -96,7 +102,7 @@
         <div class="header-content">
             <div class="brand">
                 <i class="fa-solid fa-notes-medical" style="color:var(--primary);"></i>
-                <div class="brand-text">Handover IPD3 <span id="patient-count" class="patient-count-badge">0 ราย</span></div>
+                <div class="brand-text">Handover IPD3 <span id="patient-count" class="patient-count-badge"><i class="fa-solid fa-spinner fa-spin"></i></span></div>
             </div>
             <div style="display:flex; gap:10px;">
                 <span id="sync-status" style="color:#64748b; font-size:0.8rem; align-self:center;"><i class="fa-solid fa-cloud-check"></i></span>
@@ -106,7 +112,6 @@
         </div>
     </header>
 
-    <!-- Toolbar วาดรูป -->
     <div class="pen-toolbar">
         <button class="tool-btn active" id="tool-pen" onclick="setTool('pen')" title="ปากกา"><i class="fa-solid fa-pen"></i></button>
         <button class="tool-btn" id="tool-highlighter" onclick="setTool('highlighter')" title="ไฮไลท์"><i class="fa-solid fa-highlighter"></i></button>
@@ -115,7 +120,7 @@
         <button class="tool-btn" id="tool-line" onclick="setTool('line')" title="เส้นตรง"><i class="fa-solid fa-minus"></i></button>
         <button class="tool-btn" id="tool-rect" onclick="setTool('rect')" title="สี่เหลี่ยม"><i class="fa-regular fa-square"></i></button>
         <button class="tool-btn" id="tool-circle" onclick="setTool('circle')" title="วงกลม"><i class="fa-regular fa-circle"></i></button>
-        <button class="tool-btn" id="tool-fill" onclick="toggleFill()" title="ระบายสีทึบ"><i class="fa-solid fa-fill-drip"></i></button>
+        <button class="tool-btn" id="tool-fill" onclick="toggleFill()" title="เปิด/ปิด ระบายสีทึบ"><i class="fa-solid fa-fill-drip"></i></button>
         <div style="width: 1px; height: 20px; background: var(--border-color); margin: 0 5px;"></div>
         <div class="color-dot active" style="background:#2563eb;" onclick="setColor('#2563eb', this)"></div>
         <div class="color-dot" style="background:#dc2626;" onclick="setColor('#dc2626', this)"></div>
@@ -126,18 +131,20 @@
     </div>
 
     <div class="container">
-        <!-- Views -->
+        <!-- View: WORK list -->
         <div id="view-worklist"></div>
         
+        <!-- View: WORK card -->
         <div id="view-workcard" style="display: none;">
             <div class="card-view-selector" id="bed-pills"></div>
             <div id="single-card-container"></div>
         </div>
         
+        <!-- View: New Order -->
         <div id="view-neworder" style="display: none;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">
                 <h3 style="color:var(--primary);">รายการ New Order</h3>
-                <button class="btn-outline" style="background:var(--primary); font-size:0.8rem;" onclick="toggleNewOrderView()"><i class="fa-solid fa-table"></i> สลับมุมมองตาราง</button>
+                <button class="btn-outline" style="background:var(--primary); font-size:0.8rem;" onclick="toggleNewOrderView()"><i class="fa-solid fa-table"></i> สลับมุมมอง</button>
             </div>
             <div id="neworder-cards-view"></div>
             <div id="neworder-table-view" class="order-table-wrapper" style="display:none;">
@@ -148,6 +155,7 @@
             </div>
         </div>
         
+        <!-- View: History -->
         <div id="view-history" style="display: none;">
             <div class="patient-card">
                 <div style="display:flex; justify-content:space-between;">
@@ -190,8 +198,10 @@
     </div>
 
     <script>
-        // *** วาง URL ของคุณที่นี่ ***
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbzxYnKisiqrywAuCvHnSMYnobu6DXOtJ3SmJRskHW-KPfmAwTFl3Igyr7PJKi-bYvmW/exec'; 
+        // =========================================================================
+        // ใส่ URL ที่ได้จากขั้นตอนที่ 1 ลงในเครื่องหมายคำพูดด้านล่างนี้
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbyWK4PSzh95HpNZZAeb5ITzkJzTydHdXRFbsFgIVV1ACrQbrUC4kw2XGElH4lfiCqCL/exec'; 
+        // =========================================================================
 
         let patientsData = [];
         let globalState = {}; 
@@ -222,11 +232,19 @@
             isFillShape = !isFillShape; document.getElementById('tool-fill').classList.toggle('active', isFillShape);
         }
 
-        // --- ระบบโหลดข้อมูล ---
+        // --- ระบบโหลดข้อมูล ป้องกันการแครช ---
         async function fetchDataFromServer(showLoader = true, isSilentSync = false) {
             const loader = document.getElementById('loading-screen');
             const pBar = document.getElementById('load-bar');
             const pText = document.getElementById('load-percent');
+
+            // หน่วงเวลา 8 วินาที หากเชื่อมต่อล้มเหลวให้แสดงข้อมูลที่มีในเครื่องแทนเพื่อป้องกันแอปค้าง
+            const fallbackTimer = setTimeout(() => {
+                if (loader.style.display !== 'none') {
+                    loader.style.display = 'none';
+                    if (patientsData.length === 0) loadMockData("โหลดนานเกินไป");
+                }
+            }, 8000);
 
             if (showLoader && !isSilentSync) {
                 loader.style.display = 'flex';
@@ -240,25 +258,27 @@
                 }
             }, 50);
 
-            // เคลียร์โครงสร้างเก่าที่มีปัญหาบั๊กก่อนหน้านี้ เพื่อเริ่มใหม่ให้สมบูรณ์
-            if(showLoader) localStorage.removeItem('ipd3_local_state');
-
             try {
-                const response = await fetch(GAS_URL);
-                if (!response.ok) throw new Error('Network error');
+                // เพิ่มการกัน Cache เพื่อให้ได้ข้อมูลอัปเดตตลอด
+                const response = await fetch(GAS_URL + (isSilentSync ? '?t=' + Date.now() : ''));
+                if (!response.ok) throw new Error('Network status: ' + response.status);
+                
                 const resData = await response.json();
+                if(resData.error) throw new Error(resData.error);
                 
                 clearInterval(interval);
+                clearTimeout(fallbackTimer);
                 if(showLoader && !isSilentSync) { pBar.style.width = '100%'; pText.innerText = '100%'; }
                 
                 if (Array.isArray(resData)) patientsData = resData;
                 else patientsData = resData.patients || [];
                 
+                if (patientsData.length === 0) throw new Error("ไม่พบข้อมูลผู้ป่วย");
+
                 const remoteState = resData.liveState || {};
                 let needRender = false;
                 
                 patientsData.forEach(pt => {
-                    // กำหนดค่าเริ่มต้น ป้องกัน undefined
                     if(!globalState[pt.bed]) {
                         globalState[pt.bed] = { 
                             text: '', canvas: null, stampCount: 0, photos: [], lastUpdate: 0,
@@ -275,52 +295,47 @@
 
                 if(showLoader && !isSilentSync) { setTimeout(() => { loader.style.display = 'none'; }, 300); }
                 if(needRender || (showLoader && !isSilentSync)) initApp();
-                document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-check" style="color:#10b981;"></i> ซิงก์ล่าสุดเมื่อครู่';
+                document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-check" style="color:#10b981;"></i> ซิงก์แล้ว';
                 
             } catch (err) {
+                console.error("Fetch Error:", err);
                 clearInterval(interval);
+                clearTimeout(fallbackTimer);
                 if(showLoader && !isSilentSync) loader.style.display = 'none';
                 
-                if (patientsData.length === 0) {
-                    patientsData = [ { bed:"01", an:"AN-0000", name:"(ตัวอย่าง) โหลดไม่สำเร็จ", dx:"-", rec:"-", dtx:"-", hct:"-", film:"-", ds:"-", consult:"-", nebulizer1:"-", nebulizer2:"-", onedayStat:"-", hc2:"-", hc5:"-", lab:"-" } ];
-                    patientsData.forEach(pt => {
-                        if(!globalState[pt.bed]) globalState[pt.bed] = { text: '', canvas: null, stampCount: 0, photos: [], lastUpdate: 0, io:'', film:'', ds:'', consult:'', hc2:'', hc5:'', lab:'' };
-                    });
-                    initApp();
-                }
-                if(!isSilentSync) Swal.fire('เกิดข้อผิดพลาด', 'กรุณาตรวจสอบอินเทอร์เน็ต ระบบแสดงข้อมูลจำลองแทน', 'warning');
+                if (patientsData.length === 0) loadMockData(err.message);
+                if(!isSilentSync) Swal.fire('เกิดข้อผิดพลาด', 'ดึงข้อมูลไม่สำเร็จ: ' + err.message + '<br>ระบบจำลองข้อมูลชั่วคราว', 'warning');
                 document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-xmark" style="color:#ef4444;"></i> ออฟไลน์';
             }
         }
 
-        // --- ระบบซิงก์ข้อมูลอัตโนมัติ (Delay 2 วิ) ---
+        function loadMockData(errMsg) {
+            patientsData = [ { bed:"01", an:"AN-ERROR", name:"(ไม่มีข้อมูล) " + errMsg, dx:"-", rec:"-", dtx:"-", hct:"-", film:"-", ds:"-", consult:"-", nebulizer1:"-", nebulizer2:"-", onedayStat:"-", hc2:"-", hc5:"-", lab:"-" } ];
+            patientsData.forEach(pt => {
+                if(!globalState[pt.bed]) globalState[pt.bed] = { text: '', canvas: null, stampCount: 0, photos: [], lastUpdate: 0, io:'', film:'', ds:'', consult:'', hc2:'', hc5:'', lab:'' };
+            });
+            initApp();
+        }
+
+        setInterval(() => fetchDataFromServer(false, true), 10000);
+
         function triggerCloudSync() {
             clearTimeout(syncTimeout);
-            document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังซิงก์...';
-            
-            // ใช้ Delay 2.5 วินาที เพื่อไม่ให้เซิร์ฟเวอร์ค้าง
+            document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> อัปโหลด...';
             syncTimeout = setTimeout(async () => {
                 try {
                     await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({action: 'sync_live', state: globalState}) });
-                    document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-check" style="color:#10b981;"></i> ซิงก์ล่าสุดเมื่อครู่';
+                    document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-check" style="color:#10b981;"></i> ซิงก์แล้ว';
                 } catch(e) {
-                    document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-xmark" style="color:#ef4444;"></i> ซิงก์ไม่สำเร็จ';
+                    document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-xmark" style="color:#ef4444;"></i> ผิดพลาด';
                 }
-            }, 2500);
+            }, 2000);
         }
 
         function initApp() {
             document.getElementById('patient-count').innerText = `${patientsData.length} ราย`;
             renderWorkList(); renderNewOrder(); buildCardPills();
             if(document.getElementById('view-workcard').style.display === 'block') renderSingleCard(currentBedIndex);
-            
-            // อัปเดตข้อมูลตาราง New Order ให้ตรงกับ State
-            patientsData.forEach(pt => {
-                ['io', 'film', 'ds', 'consult', 'hc2', 'hc5', 'lab'].forEach(field => {
-                    const val = globalState[pt.bed][field] || '';
-                    document.querySelectorAll(`[data-bind="${pt.bed}-${field}"]`).forEach(el => el.value = val);
-                });
-            });
         }
 
         function handleStateChange(bed, field, val) {
@@ -331,7 +346,7 @@
         
         function appendToNote(bed, label, text) {
             if(text === '-' || text.trim() === '') return;
-            const currentText = globalState[bed].text || '';
+            const currentText = globalState[bed].text;
             handleStateChange(bed, 'text', currentText + (currentText ? '\n' : '') + `${label}: ${text}`);
         }
 
@@ -339,7 +354,7 @@
         async function handlePhotoUpload(bed, input) {
             const files = input.files;
             if(!globalState[bed].photos) globalState[bed].photos = [];
-            if(globalState[bed].photos.length + files.length > 4) { Swal.fire('คำเตือน', 'แนบรูปได้สูงสุด 4 รูปต่อเตียง', 'warning'); return; }
+            if(globalState[bed].photos.length + files.length > 4) { Swal.fire('คำเตือน', 'แนบรูปได้สูงสุด 4 รูป', 'warning'); return; }
             Swal.fire({title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
             
             for(let i=0; i<files.length; i++) {
@@ -461,40 +476,27 @@
             patientsData.forEach(pt => { setupCanvas(`canvas-wl-${pt.bed}`, pt.bed); renderPhotosDOM(pt.bed); });
         }
 
-        // --- Render UI (WORK card มีปุ่ม ก่อนหน้า/ถัดไป) ---
+        // --- Render UI (WORK card: Scroll Pills) ---
         function buildCardPills() {
             const container = document.getElementById('bed-pills'); container.innerHTML = '';
             patientsData.forEach((pt, idx) => {
                 const pill = document.createElement('div'); pill.className = `bed-pill ${idx === 0 ? 'active' : ''}`; pill.innerText = `เตียง ${pt.bed}`;
-                pill.onclick = () => { currentBedIndex = idx; updateCardPillUI(); renderSingleCard(idx); };
+                pill.onclick = () => { 
+                    document.querySelectorAll('.bed-pill').forEach(p => p.classList.remove('active')); 
+                    pill.classList.add('active'); 
+                    currentBedIndex = idx; 
+                    renderSingleCard(idx); 
+                };
                 container.appendChild(pill);
             });
-        }
-        
-        function updateCardPillUI() {
-            document.querySelectorAll('.bed-pill').forEach((p, idx) => {
-                if(idx === currentBedIndex) p.classList.add('active'); else p.classList.remove('active');
-            });
-        }
-
-        function navigateCard(direction) {
-            currentBedIndex += direction;
-            if(currentBedIndex < 0) currentBedIndex = patientsData.length - 1;
-            if(currentBedIndex >= patientsData.length) currentBedIndex = 0;
-            updateCardPillUI(); renderSingleCard(currentBedIndex);
-            
-            // เลื่อน Pill ให้มองเห็น
-            const pills = document.querySelectorAll('.bed-pill');
-            if(pills[currentBedIndex]) pills[currentBedIndex].scrollIntoView({ behavior: 'smooth', inline: 'center' });
+            // Auto Scroll ให้อยู่ตรงกลาง
+            const activePill = container.querySelector('.active');
+            if(activePill) activePill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         }
 
         function renderSingleCard(idx) {
             const pt = patientsData[idx]; const container = document.getElementById('single-card-container'); const cid = `canvas-single-${pt.bed}`;
             container.innerHTML = `
-                <div style="display:flex; justify-content:space-between; margin-bottom: 15px;">
-                    <button class="btn-outline" style="color:var(--primary); border-color:var(--primary); font-size:0.9rem;" onclick="navigateCard(-1)"><i class="fa-solid fa-chevron-left"></i> ก่อนหน้า</button>
-                    <button class="btn-outline" style="color:var(--primary); border-color:var(--primary); font-size:0.9rem;" onclick="navigateCard(1)">ถัดไป <i class="fa-solid fa-chevron-right"></i></button>
-                </div>
                 <div class="patient-card">
                     <div class="card-header"><span class="bed-badge">เตียง ${pt.bed}</span><span style="font-size:1.25rem; font-weight:600;">${pt.name}</span></div>
                     ${createInfoGrid(pt)}
@@ -514,29 +516,28 @@
             setupCanvas(cid, pt.bed); renderPhotosDOM(pt.bed);
         }
 
-        // --- Render UI (New Order แก้ไขบั๊กข้อมูลไม่แสดง) ---
+        // --- Render UI (New Order: Toggle Views) ---
         function renderNewOrder() {
             const cardsView = document.getElementById('neworder-cards-view'); const tbody = document.getElementById('neworder-tbody');
             cardsView.innerHTML = ''; tbody.innerHTML = '';
             
             patientsData.forEach(pt => {
                 const cid = `canvas-no-${pt.bed}`;
-                const st = globalState[pt.bed];
                 
                 cardsView.innerHTML += `
                     <div class="patient-card">
                         <div class="card-header" style="border-bottom-color:#fbbf24;"><span class="bed-badge" style="color:#d97706;">เตียง ${pt.bed}</span><span style="font-size:1.25rem; font-weight:600;">${pt.name}</span></div>
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                            <div class="input-group"><label>I/O</label><input type="text" data-bind="${pt.bed}-io" value="${st.io || ''}" oninput="handleStateChange('${pt.bed}', 'io', this.value)"></div>
-                            <div class="input-group"><label>Film</label><input type="text" data-bind="${pt.bed}-film" value="${st.film || ''}" oninput="handleStateChange('${pt.bed}', 'film', this.value)"></div>
-                            <div class="input-group"><label>D/S</label><input type="text" data-bind="${pt.bed}-ds" value="${st.ds || ''}" oninput="handleStateChange('${pt.bed}', 'ds', this.value)"></div>
-                            <div class="input-group"><label>Consult</label><input type="text" data-bind="${pt.bed}-consult" value="${st.consult || ''}" oninput="handleStateChange('${pt.bed}', 'consult', this.value)"></div>
-                            <div class="input-group"><label>H/C2</label><input type="text" data-bind="${pt.bed}-hc2" value="${st.hc2 || ''}" oninput="handleStateChange('${pt.bed}', 'hc2', this.value)"></div>
-                            <div class="input-group"><label>H/C5</label><input type="text" data-bind="${pt.bed}-hc5" value="${st.hc5 || ''}" oninput="handleStateChange('${pt.bed}', 'hc5', this.value)"></div>
-                            <div class="input-group full-width"><label>LAB</label><input type="text" data-bind="${pt.bed}-lab" value="${st.lab || ''}" oninput="handleStateChange('${pt.bed}', 'lab', this.value)"></div>
+                            <div class="input-group"><label>I/O</label><input type="text" data-bind="${pt.bed}-io" value="${globalState[pt.bed].io}" oninput="handleStateChange('${pt.bed}', 'io', this.value)"></div>
+                            <div class="input-group"><label>Film</label><input type="text" data-bind="${pt.bed}-film" value="${globalState[pt.bed].film}" oninput="handleStateChange('${pt.bed}', 'film', this.value)"></div>
+                            <div class="input-group"><label>D/S</label><input type="text" data-bind="${pt.bed}-ds" value="${globalState[pt.bed].ds}" oninput="handleStateChange('${pt.bed}', 'ds', this.value)"></div>
+                            <div class="input-group"><label>Consult</label><input type="text" data-bind="${pt.bed}-consult" value="${globalState[pt.bed].consult}" oninput="handleStateChange('${pt.bed}', 'consult', this.value)"></div>
+                            <div class="input-group"><label>H/C2</label><input type="text" data-bind="${pt.bed}-hc2" value="${globalState[pt.bed].hc2}" oninput="handleStateChange('${pt.bed}', 'hc2', this.value)"></div>
+                            <div class="input-group"><label>H/C5</label><input type="text" data-bind="${pt.bed}-hc5" value="${globalState[pt.bed].hc5}" oninput="handleStateChange('${pt.bed}', 'hc5', this.value)"></div>
+                            <div class="input-group full-width"><label>LAB</label><input type="text" data-bind="${pt.bed}-lab" value="${globalState[pt.bed].lab}" oninput="handleStateChange('${pt.bed}', 'lab', this.value)"></div>
                         </div>
                         <div class="note-section" style="margin-top: 15px;">
-                            <textarea data-bind="${pt.bed}-text" class="text-note" oninput="handleStateChange('${pt.bed}', 'text', this.value)">${st.text || ''}</textarea>
+                            <textarea data-bind="${pt.bed}-text" class="text-note" oninput="handleStateChange('${pt.bed}', 'text', this.value)">${globalState[pt.bed].text}</textarea>
                             <div style="display:flex; justify-content:space-between; align-items:center;">
                                 <label style="font-weight:600; color:var(--primary); font-size:0.9rem;">วาดโน้ตเพิ่มเติม</label>
                                 <div style="display:flex; gap:8px;">
@@ -551,17 +552,14 @@
 
                 tbody.innerHTML += `
                     <tr>
-                        <td style="font-weight:600; color:var(--primary);">${pt.bed}</td><td style="font-weight:600; min-width: 150px;">${pt.name}</td>
-                        <td><input type="text" data-bind="${pt.bed}-io" value="${st.io || ''}" oninput="handleStateChange('${pt.bed}', 'io', this.value)"></td>
-                        <td><input type="text" data-bind="${pt.bed}-film" value="${st.film || ''}" oninput="handleStateChange('${pt.bed}', 'film', this.value)"></td>
-                        <td><input type="text" data-bind="${pt.bed}-ds" value="${st.ds || ''}" oninput="handleStateChange('${pt.bed}', 'ds', this.value)"></td>
-                        <td><input type="text" data-bind="${pt.bed}-consult" value="${st.consult || ''}" oninput="handleStateChange('${pt.bed}', 'consult', this.value)"></td>
-                        <td style="min-width: 100px;">
-                            <input type="text" data-bind="${pt.bed}-hc2" value="${st.hc2 || ''}" oninput="handleStateChange('${pt.bed}', 'hc2', this.value)" placeholder="H/C2" style="margin-bottom:4px;">
-                            <input type="text" data-bind="${pt.bed}-hc5" value="${st.hc5 || ''}" oninput="handleStateChange('${pt.bed}', 'hc5', this.value)" placeholder="H/C5">
-                        </td>
-                        <td><input type="text" data-bind="${pt.bed}-lab" value="${st.lab || ''}" oninput="handleStateChange('${pt.bed}', 'lab', this.value)"></td>
-                        <td><textarea data-bind="${pt.bed}-text" oninput="handleStateChange('${pt.bed}', 'text', this.value)" style="min-width: 150px;">${st.text || ''}</textarea></td>
+                        <td style="font-weight:600; color:var(--primary);">${pt.bed}</td><td style="font-weight:600;">${pt.name}</td>
+                        <td><input type="text" data-bind="${pt.bed}-io" value="${globalState[pt.bed].io}" oninput="handleStateChange('${pt.bed}', 'io', this.value)"></td>
+                        <td><input type="text" data-bind="${pt.bed}-film" value="${globalState[pt.bed].film}" oninput="handleStateChange('${pt.bed}', 'film', this.value)"></td>
+                        <td><input type="text" data-bind="${pt.bed}-ds" value="${globalState[pt.bed].ds}" oninput="handleStateChange('${pt.bed}', 'ds', this.value)"></td>
+                        <td><input type="text" data-bind="${pt.bed}-consult" value="${globalState[pt.bed].consult}" oninput="handleStateChange('${pt.bed}', 'consult', this.value)"></td>
+                        <td><input type="text" data-bind="${pt.bed}-hc2" value="${globalState[pt.bed].hc2}" oninput="handleStateChange('${pt.bed}', 'hc2', this.value)" placeholder="H/C2"><input type="text" data-bind="${pt.bed}-hc5" value="${globalState[pt.bed].hc5}" oninput="handleStateChange('${pt.bed}', 'hc5', this.value)" placeholder="H/C5" style="margin-top:4px;"></td>
+                        <td><input type="text" data-bind="${pt.bed}-lab" value="${globalState[pt.bed].lab}" oninput="handleStateChange('${pt.bed}', 'lab', this.value)"></td>
+                        <td><textarea data-bind="${pt.bed}-text" oninput="handleStateChange('${pt.bed}', 'text', this.value)">${globalState[pt.bed].text}</textarea></td>
                     </tr>`;
             });
             patientsData.forEach(pt => { setupCanvas(`canvas-no-${pt.bed}`, pt.bed); renderPhotosDOM(pt.bed); });
@@ -571,21 +569,40 @@
             newOrderViewMode = newOrderViewMode === 'card' ? 'table' : 'card';
             document.getElementById('neworder-cards-view').style.display = newOrderViewMode === 'card' ? 'block' : 'none';
             document.getElementById('neworder-table-view').style.display = newOrderViewMode === 'table' ? 'block' : 'none';
+            
+            if(newOrderViewMode === 'card') {
+                patientsData.forEach(pt => {
+                    const canvasId = `canvas-no-${pt.bed}`;
+                    const canvas = document.getElementById(canvasId);
+                    if(canvas) {
+                        const rect = canvas.parentElement.getBoundingClientRect();
+                        canvas.width = rect.width; canvas.height = rect.height;
+                        if (globalState[pt.bed].canvas) {
+                            const img = new Image(); img.onload = () => canvas.getContext('2d').drawImage(img, 0, 0); img.src = globalState[pt.bed].canvas;
+                        }
+                    }
+                });
+            }
         }
 
+        // --- Navigation ---
         function switchView(viewName) {
             document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`nav-${viewName}`).classList.add('active');
             ['worklist', 'workcard', 'neworder', 'history'].forEach(v => document.getElementById(`view-${v}`).style.display = 'none');
             
-            if(viewName === 'workcard') renderSingleCard(currentBedIndex);
+            if(viewName === 'workcard') {
+                buildCardPills();
+                renderSingleCard(currentBedIndex);
+            }
+            if(viewName === 'history') loadCloudHistory();
             document.getElementById(`view-${viewName}`).style.display = 'block';
         }
 
         // --- Canvas Engine ---
         function setupCanvas(canvasId, bed) {
             const canvas = document.getElementById(canvasId);
-            if (!canvas || canvas.getBoundingClientRect().width === 0) return;
+            if (!canvas) return;
             const ctx = canvas.getContext('2d');
             
             const enforceSize = () => {
@@ -597,7 +614,7 @@
                     }
                 }
             };
-            enforceSize();
+            enforceSize(); // Initialize
 
             let isDrawing = false, startX, startY, snapshot;
             canvas.addEventListener('pointerdown', (e) => {
@@ -626,19 +643,12 @@
                 e.preventDefault();
             });
 
-            const stopDraw = () => { 
-                if (isDrawing) { 
-                    isDrawing = false; 
-                    globalState[bed].canvas = canvas.toDataURL(); 
-                    globalState[bed].lastUpdate = Date.now(); 
-                    triggerCloudSync(); 
-                } 
-            };
+            const stopDraw = () => { if (isDrawing) { isDrawing = false; globalState[bed].canvas = canvas.toDataURL(); globalState[bed].lastUpdate = Date.now(); triggerCloudSync(); } };
             canvas.addEventListener('pointerup', stopDraw); canvas.addEventListener('pointerleave', stopDraw);
         }
 
         function clearNotePrompt(bed) {
-            Swal.fire({ title: 'ยืนยันลบกระดาน?', text: "รูปลายเส้นและการ์ตูน Anatomy จะถูกลบทิ้ง", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ลบทิ้ง', cancelButtonText: 'ยกเลิก' }).then((r) => {
+            Swal.fire({ title: 'ยืนยันลบกระดาน?', text: "เฉพาะรูปลายเส้นและแบบฟอร์มบนกระดานจะหายไป", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ลบทิ้ง', cancelButtonText: 'ยกเลิก' }).then((r) => {
                 if (r.isConfirmed) {
                     globalState[bed].canvas = null; globalState[bed].stampCount = 0; globalState[bed].lastUpdate = Date.now();
                     document.querySelectorAll(`canvas[id$="-${bed}"]`).forEach(c => {if(c.getContext) c.getContext('2d').clearRect(0,0, c.width, c.height);});
@@ -652,7 +662,12 @@
             if(!activeCanvasId) return;
             const canvas = document.getElementById(activeCanvasId); const ctx = canvas.getContext('2d');
             const imgSize = 90; const padding = 10; let count = globalState[activeBed].stampCount || 0;
-            if(canvas.width === 0) { const rect = canvas.parentElement.getBoundingClientRect(); canvas.width = rect.width; canvas.height = rect.height; }
+            
+            // ป้องกันการแสตมป์ตอนที่ canvas width ยังไม่ได้สร้าง
+            if(canvas.width === 0) {
+                const rect = canvas.parentElement.getBoundingClientRect();
+                canvas.width = rect.width; canvas.height = rect.height;
+            }
             
             const cols = Math.max(1, Math.floor(canvas.width / (imgSize + padding)));
             const x = (count % cols) * (imgSize + padding) + padding; const y = Math.floor(count / cols) * (imgSize + padding) + padding;
@@ -710,6 +725,7 @@
             });
         }
 
+        // เริ่มโหลดข้อมูลเมื่อเข้าแอป
         window.onload = () => fetchDataFromServer(true, false);
     </script>
 </body>
