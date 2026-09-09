@@ -63,13 +63,13 @@
 
         .input-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
         .input-group label { font-size: 0.85rem; font-weight: 600; color: var(--primary); }
-        .input-group input { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-family: inherit; font-size: 0.95rem; }
+        .input-group input { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-family: inherit; font-size: 0.95rem; color: var(--text-main); }
 
         .order-table-wrapper { overflow-x: auto; background: #fff; border: 1px solid var(--border-color); border-radius: 8px; }
         .order-table { width: 100%; border-collapse: collapse; min-width: 800px; }
         .order-table th, .order-table td { padding: 10px; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); font-size: 0.9rem;}
         .order-table th { background: #f8fafc; color: var(--primary); font-weight: 600; white-space: nowrap; }
-        .order-table input, .order-table textarea { width: 100%; border: none; background: transparent; font-family: inherit; outline: none; resize: vertical;}
+        .order-table input, .order-table textarea { width: 100%; border: none; background: transparent; font-family: inherit; outline: none; resize: vertical; color: var(--text-main);}
         .order-table textarea { min-height: 40px; }
 
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px 0; z-index: 200; }
@@ -94,7 +94,7 @@
 
     <div id="loading-screen">
         <i class="fa-solid fa-notes-medical fa-beat" style="font-size: 3.5rem; color: var(--primary);"></i>
-        <div class="loading-text">กำลังโหลดข้อมูล PTform... <span id="load-percent">0%</span></div>
+        <div class="loading-text">กำลังซิงก์ข้อมูล... <span id="load-percent">0%</span></div>
         <div class="progress-container"><div class="progress-bar" id="load-bar"></div></div>
     </div>
 
@@ -102,7 +102,7 @@
         <div class="header-content">
             <div class="brand">
                 <i class="fa-solid fa-notes-medical" style="color:var(--primary);"></i>
-                <div class="brand-text">Handover IPD3 <span id="patient-count" class="patient-count-badge">0 ราย</span></div>
+                <div class="brand-text">Handover IPD3 <span id="patient-count" class="patient-count-badge"><i class="fa-solid fa-spinner fa-spin"></i></span></div>
             </div>
             <div style="display:flex; gap:10px;">
                 <span id="sync-status" style="color:#64748b; font-size:0.8rem; align-self:center;"><i class="fa-solid fa-cloud-check"></i></span>
@@ -127,18 +127,20 @@
         <div class="color-dot" style="background:#16a34a;" onclick="setColor('#16a34a', this)"></div>
         <div class="color-dot" style="background:#1e293b;" onclick="setColor('#1e293b', this)"></div>
         <div style="width: 1px; height: 20px; background: var(--border-color); margin: 0 5px;"></div>
-        <input type="range" id="pen-size" class="size-slider" min="1" max="20" value="2" onchange="updateSize(this.value)" title="ปรับขนาดปากกา">
+        <input type="range" id="pen-size" class="size-slider" min="1" max="20" value="2" onchange="updateSize(this.value)">
     </div>
 
     <div class="container">
-        <!-- Views -->
+        <!-- View: WORK list -->
         <div id="view-worklist"></div>
         
+        <!-- View: WORK card -->
         <div id="view-workcard" style="display: none;">
             <div class="card-view-selector" id="bed-pills"></div>
             <div id="single-card-container"></div>
         </div>
         
+        <!-- View: New Order -->
         <div id="view-neworder" style="display: none;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">
                 <h3 style="color:var(--primary);">รายการ New Order</h3>
@@ -153,6 +155,7 @@
             </div>
         </div>
         
+        <!-- View: History -->
         <div id="view-history" style="display: none;">
             <div class="patient-card">
                 <div style="display:flex; justify-content:space-between;">
@@ -176,6 +179,7 @@
         <button class="nav-item" id="nav-history" onclick="switchView('history')"><i class="fa-solid fa-cloud"></i> History</button>
     </nav>
 
+    <!-- Modal Anatomy -->
     <div class="anatomy-modal" id="anatomy-modal">
         <div style="background:#fff; padding:25px; border-radius:8px; width:90%; max-width:400px;">
             <div style="display:flex; justify-content:space-between;">
@@ -194,8 +198,10 @@
     </div>
 
     <script>
-        // ใช้ URL ของคุณ
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbwwo44lLhKZ66VrsIZGCwcjDIHL5XXX3DpqfBpiqK99AE7X-Iz22uUV73cOaa_OfTqG/exec'; 
+        // ----------------------------------------------------------------------------------
+        // ใส่ URL ที่ได้จากขั้นตอนที่ 1 ลงในเครื่องหมายคำพูดด้านล่างนี้
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbwRFtB9qeBmpGzO9OZQrSMEOgE4Py6_aS2fRf6hs8VxH5sk6GCyjXK1eQQF02LHQWFo/exec'; 
+        // ----------------------------------------------------------------------------------
 
         let patientsData = [];
         let globalState = {}; 
@@ -212,7 +218,7 @@
             abdomen: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%2364748b" stroke-width="2"><rect x="20" y="20" width="60" height="60" rx="15"/></svg>'
         };
 
-        // --- เครื่องมือ ---
+        // --- ตั้งค่าเครื่องมือ ---
         function setTool(tool) {
             currentTool = tool; document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`tool-${tool}`).classList.add('active');
@@ -226,24 +232,24 @@
             isFillShape = !isFillShape; document.getElementById('tool-fill').classList.toggle('active', isFillShape);
         }
 
-        // --- โหลดข้อมูล (กันค้าง 100%) ---
+        // --- ระบบโหลดข้อมูล ป้องกันการแครช ---
         async function fetchDataFromServer(showLoader = true, isSilentSync = false) {
             const loader = document.getElementById('loading-screen');
             const pBar = document.getElementById('load-bar');
             const pText = document.getElementById('load-percent');
 
+            // Timeout กันหน้าจอโหลดค้าง 8 วินาที
+            const fallbackTimer = setTimeout(() => {
+                if (loader.style.display !== 'none') {
+                    loader.style.display = 'none';
+                    if (patientsData.length === 0) loadMockData("โหลดนานเกินไป");
+                }
+            }, 8000);
+
             if (showLoader && !isSilentSync) {
                 loader.style.display = 'flex';
                 pBar.style.width = '10%'; pText.innerText = '10%';
             }
-
-            // Fallback Timer ตัดการทำงานถ้าโหลดเกิน 8 วินาที
-            const fallbackTimer = setTimeout(() => {
-                if (loader.style.display !== 'none') {
-                    loader.style.display = 'none';
-                    if (patientsData.length === 0) loadMockData();
-                }
-            }, 8000);
 
             let percent = 10;
             const interval = setInterval(() => {
@@ -253,10 +259,16 @@
             }, 50);
 
             try {
-                // ใส่ Timestamp กัน Cache
-                const response = await fetch(GAS_URL + (isSilentSync ? '?t=' + Date.now() : ''));
-                if (!response.ok) throw new Error('Network error');
+                // ดึงข้อมูลแบบส่ง Content-Type text/plain ป้องกัน Preflight CORS Block
+                const response = await fetch(GAS_URL + (isSilentSync ? '?t=' + Date.now() : ''), {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+                
+                if (!response.ok) throw new Error('Network status: ' + response.status);
+                
                 const resData = await response.json();
+                if(resData.error) throw new Error(resData.error);
                 
                 clearInterval(interval);
                 clearTimeout(fallbackTimer);
@@ -265,7 +277,7 @@
                 if (Array.isArray(resData)) patientsData = resData;
                 else patientsData = resData.patients || [];
                 
-                if (patientsData.length === 0) throw new Error('No Data');
+                if (patientsData.length === 0) throw new Error("ไม่พบข้อมูลผู้ป่วย");
 
                 const remoteState = resData.liveState || {};
                 let needRender = false;
@@ -287,54 +299,50 @@
 
                 if(showLoader && !isSilentSync) { setTimeout(() => { loader.style.display = 'none'; }, 300); }
                 if(needRender || (showLoader && !isSilentSync)) initApp();
-                document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-check" style="color:#10b981;"></i> ซิงก์ล่าสุดเมื่อครู่';
+                document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-check" style="color:#10b981;"></i> ซิงก์แล้ว';
                 
             } catch (err) {
                 clearInterval(interval);
                 clearTimeout(fallbackTimer);
                 if(showLoader && !isSilentSync) loader.style.display = 'none';
                 
-                if (patientsData.length === 0) loadMockData();
-                if(!isSilentSync) Swal.fire('ข้อมูลมีปัญหา', 'ดึงข้อมูลจาก Google Sheet ไม่สำเร็จ ระบบจำลองข้อมูลขึ้นมาแทน', 'warning');
+                if (patientsData.length === 0) loadMockData(err.message);
+                if(!isSilentSync) Swal.fire('ดึงข้อมูลไม่สำเร็จ', 'ระบบจำลองข้อมูลขึ้นมาแทน กรุณาตรวจสอบ URL หรือการตั้งค่าอินเทอร์เน็ต', 'warning');
                 document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-xmark" style="color:#ef4444;"></i> ออฟไลน์';
             }
         }
 
-        function loadMockData() {
-            patientsData = [ { bed:"01", an:"AN-0000", name:"(ตัวอย่าง) เชื่อมต่อไม่ได้", dx:"-", rec:"-", dtx:"-", hct:"-", film:"-", ds:"-", consult:"-", nebulizer1:"-", nebulizer2:"-", onedayStat:"-", hc2:"-", hc5:"-", lab:"-" } ];
+        function loadMockData(errMsg) {
+            patientsData = [ { bed:"01", an:"AN-ERROR", name:"(ตัวอย่าง) " + errMsg, dx:"-", rec:"-", dtx:"-", hct:"-", film:"-", ds:"-", consult:"-", nebulizer1:"-", nebulizer2:"-", onedayStat:"-", hc2:"-", hc5:"-", lab:"-" } ];
             patientsData.forEach(pt => {
                 if(!globalState[pt.bed]) globalState[pt.bed] = { text: '', canvas: null, stampCount: 0, photos: [], lastUpdate: 0, io:'', film:'', ds:'', consult:'', hc2:'', hc5:'', lab:'' };
             });
             initApp();
         }
 
-        // Auto Sync ทุก 10 วินาที
         setInterval(() => fetchDataFromServer(false, true), 10000);
 
         function triggerCloudSync() {
             clearTimeout(syncTimeout);
-            document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังอัปโหลด...';
+            document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> อัปโหลด...';
             syncTimeout = setTimeout(async () => {
                 try {
-                    await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({action: 'sync_live', state: globalState}) });
+                    await fetch(GAS_URL, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // ส่งเป็น text เพื่อไม่ให้ติด Preflight CORS
+                        body: JSON.stringify({action: 'sync_live', state: globalState}) 
+                    });
                     document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-check" style="color:#10b981;"></i> ซิงก์แล้ว';
                 } catch(e) {
                     document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-xmark" style="color:#ef4444;"></i> ผิดพลาด';
                 }
-            }, 1500);
+            }, 2000);
         }
 
         function initApp() {
             document.getElementById('patient-count').innerText = `${patientsData.length} ราย`;
             renderWorkList(); renderNewOrder(); buildCardPills();
             if(document.getElementById('view-workcard').style.display === 'block') renderSingleCard(currentBedIndex);
-            
-            patientsData.forEach(pt => {
-                ['io', 'film', 'ds', 'consult', 'hc2', 'hc5', 'lab'].forEach(field => {
-                    const val = globalState[pt.bed][field] || '';
-                    document.querySelectorAll(`[data-bind="${pt.bed}-${field}"]`).forEach(el => el.value = val);
-                });
-            });
         }
 
         function handleStateChange(bed, field, val) {
@@ -345,15 +353,15 @@
         
         function appendToNote(bed, label, text) {
             if(text === '-' || text.trim() === '') return;
-            const currentText = globalState[bed].text || '';
+            const currentText = globalState[bed].text;
             handleStateChange(bed, 'text', currentText + (currentText ? '\n' : '') + `${label}: ${text}`);
         }
 
-        // --- อัปโหลดภาพ & แชร์ ---
+        // --- ระบบกล้อง & แชร์ ---
         async function handlePhotoUpload(bed, input) {
             const files = input.files;
             if(!globalState[bed].photos) globalState[bed].photos = [];
-            if(globalState[bed].photos.length + files.length > 4) { Swal.fire('คำเตือน', 'แนบรูปได้สูงสุด 4 รูปต่อเตียง', 'warning'); return; }
+            if(globalState[bed].photos.length + files.length > 4) { Swal.fire('คำเตือน', 'แนบรูปได้สูงสุด 4 รูป', 'warning'); return; }
             Swal.fire({title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
             
             for(let i=0; i<files.length; i++) {
@@ -401,9 +409,8 @@
         async function shareToLine(bed) {
             const pt = patientsData.find(p => p.bed === bed); const state = globalState[bed];
             const text = `ส่งเวรเตียง ${pt.bed}\nชื่อ: ${pt.name}\nDiagnosis: ${pt.dx}\n${state.text ? 'Note: '+state.text : ''}`;
-            if(!navigator.share) { Swal.fire('ไม่รองรับ', 'เบราว์เซอร์ของอุปกรณ์นี้ไม่รองรับระบบแชร์ไฟล์โดยตรง', 'error'); return; }
-            
-            Swal.fire({title: 'กำลังเตรียมรูปภาพ...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+            if(!navigator.share) { Swal.fire('ไม่รองรับ', 'เบราว์เซอร์นี้ไม่รองรับระบบแชร์', 'error'); return; }
+            Swal.fire({title: 'กำลังเตรียมไฟล์...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
             const filesArray = [];
             if(state.photos && state.photos.length > 0) {
                 for(let i=0; i<state.photos.length; i++) {
@@ -690,7 +697,7 @@
             const record = { id: Date.now(), time: new Date().toLocaleString('th-TH'), nurse: nurseName, count: patientsData.length, state: globalState };
             Swal.fire({title: 'กำลังอัปโหลด...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
             try {
-                await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({action: 'save_history', data: record}) });
+                await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({action: 'save_history', data: record}) });
                 
                 // รีเซ็ตกระดานหลังจากบันทึก
                 globalState = {};
