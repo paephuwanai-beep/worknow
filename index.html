@@ -72,8 +72,8 @@
         .order-table input, .order-table textarea { width: 100%; border: none; background: transparent; font-family: inherit; outline: none; resize: vertical; color: var(--text-main);}
         .order-table textarea { min-height: 40px; }
 
-        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px 0; z-index: 200; }
-        .nav-item { background: none; border: none; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px 0; z-index: 200; box-shadow: 0 -2px 10px rgba(0,0,0,0.05);}
+        .nav-item { background: none; border: none; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 5px 10px;}
         .nav-item.active { color: var(--primary); }
 
         .anatomy-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:300; align-items:center; justify-content:center; }
@@ -199,8 +199,8 @@
 
     <script>
         // =========================================================================
-        // ใส่ Web App URL ที่ใช้งานได้ของคุณลงในบรรทัดนี้
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbzhkmRiHvYaXlORnVg93HBwd1t7dCel1r5xtPVpWxmNamJGgN0Y7l_viDt5WJOV2ssP/exec'; 
+        // URL Google Apps Script เดิมของคุณพยาบาล
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbwLov1zYFi1UC1-pApp7zEdRwDp9Up1Jd60DQg3gRucbvgMQC3BVycvHY8xm3w7UxAq/exec'; 
         // =========================================================================
 
         let patientsData = [];
@@ -230,45 +230,39 @@
             isFillShape = !isFillShape; document.getElementById('tool-fill').classList.toggle('active', isFillShape);
         }
 
-        // --- ฟังก์ชันซิงก์รูปวาดทุกเมนูให้ตรงกัน (เพิ่มใหม่แก้ปัญหา Canvas รวน) ---
+        // --- ระบบ Sync กระดานทั้งหมดแบบ Real-time และแก้ปัญหาขนาด 0 ---
         function syncAllCanvases() {
+            if (!patientsData) return;
             patientsData.forEach(pt => {
                 const st = globalState[pt.bed];
                 const canvasIds = [`canvas-wl-${pt.bed}`, `canvas-single-${pt.bed}`, `canvas-no-${pt.bed}`];
                 
-                if (st && st.canvas) {
-                    const img = new Image();
-                    img.onload = () => {
-                        canvasIds.forEach(cid => {
-                            const canvas = document.getElementById(cid);
-                            if (canvas && canvas.parentElement) {
-                                const rect = canvas.parentElement.getBoundingClientRect();
-                                if (rect.width > 0) {
-                                    canvas.width = rect.width; canvas.height = rect.height;
-                                    const ctx = canvas.getContext('2d');
-                                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                                }
+                canvasIds.forEach(cid => {
+                    const canvas = document.getElementById(cid);
+                    // ตรวจสอบว่าหน้าจอนั้นถูกเปิดอยู่หรือไม่ (offsetParent !== null)
+                    if (canvas && canvas.offsetParent !== null) {
+                        const rect = canvas.parentElement.getBoundingClientRect();
+                        if (rect.width > 0) {
+                            // ปรับขนาดกระดานให้พอดีกับหน้าจอ
+                            if (canvas.width !== Math.floor(rect.width)) {
+                                canvas.width = rect.width; 
+                                canvas.height = rect.height;
                             }
-                        });
-                    };
-                    img.src = st.canvas;
-                } else {
-                    canvasIds.forEach(cid => {
-                        const canvas = document.getElementById(cid);
-                        if (canvas && canvas.parentElement) {
-                            const rect = canvas.parentElement.getBoundingClientRect();
-                            if (rect.width > 0) {
-                                canvas.width = rect.width; canvas.height = rect.height;
-                                canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+                            const ctx = canvas.getContext('2d');
+                            ctx.clearRect(0, 0, canvas.width, canvas.height);
+                            // วาดรูปล่าสุดจาก State ลงไป
+                            if (st && st.canvas) {
+                                const img = new Image();
+                                img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                                img.src = st.canvas;
                             }
                         }
-                    });
-                }
+                    }
+                });
             });
         }
 
-        // --- โหลดข้อมูล ---
+        // --- โหลดข้อมูลจาก Google Sheet / LocalStorage ---
         async function fetchDataFromServer(showLoader = true) {
             const loader = document.getElementById('loading-screen');
             const pBar = document.getElementById('load-bar');
@@ -301,17 +295,26 @@
                 if(showLoader) { pBar.style.width = '100%'; pText.innerText = '100%'; }
                 
                 patientsData = Array.isArray(resData) ? resData : (resData.patients || []);
-                if (patientsData.length === 0) throw new Error("ไม่พบข้อมูล");
+                if (patientsData.length === 0) throw new Error("ไม่พบข้อมูลผู้ป่วย");
 
+                // ตรวจสอบความสมบูรณ์ของ globalState ป้องกัน Error
                 patientsData.forEach(pt => {
                     if(!globalState[pt.bed]) {
-                        globalState[pt.bed] = { 
-                            text: '', canvas: null, stampCount: 0, photos: [],
-                            io: pt.rec !== '-' ? pt.rec : '', film: pt.film !== '-' ? pt.film : '',
-                            ds: pt.ds !== '-' ? pt.ds : '', consult: pt.consult !== '-' ? pt.consult : '',
-                            hc2: pt.hc2 !== '-' ? pt.hc2 : '', hc5: pt.hc5 !== '-' ? pt.hc5 : '', lab: pt.lab !== '-' ? pt.lab : ''
-                        };
+                        globalState[pt.bed] = {};
                     }
+                    // กำหนดค่าเริ่มต้นเสมอ
+                    const st = globalState[pt.bed];
+                    st.text = st.text || '';
+                    st.canvas = st.canvas || null;
+                    st.stampCount = st.stampCount || 0;
+                    st.photos = st.photos || [];
+                    st.io = st.io !== undefined ? st.io : (pt.rec !== '-' ? pt.rec : '');
+                    st.film = st.film !== undefined ? st.film : (pt.film !== '-' ? pt.film : '');
+                    st.ds = st.ds !== undefined ? st.ds : (pt.ds !== '-' ? pt.ds : '');
+                    st.consult = st.consult !== undefined ? st.consult : (pt.consult !== '-' ? pt.consult : '');
+                    st.hc2 = st.hc2 !== undefined ? st.hc2 : (pt.hc2 !== '-' ? pt.hc2 : '');
+                    st.hc5 = st.hc5 !== undefined ? st.hc5 : (pt.hc5 !== '-' ? pt.hc5 : '');
+                    st.lab = st.lab !== undefined ? st.lab : (pt.lab !== '-' ? pt.lab : '');
                 });
 
                 if(showLoader) { setTimeout(() => { loader.style.display = 'none'; initApp(); }, 300); }
@@ -323,21 +326,27 @@
                 if(showLoader) loader.style.display = 'none';
                 
                 if (patientsData.length === 0) {
-                    patientsData = [ { bed:"01", an:"ERROR", name:"(ไม่มีอินเทอร์เน็ต) ดูประวัติเก่าแทน", dx:"-", rec:"-", dtx:"-", hct:"-", film:"-", ds:"-", consult:"-", nebulizer1:"-", nebulizer2:"-", onedayStat:"-", hc2:"-", hc5:"-", lab:"-" } ];
+                    patientsData = [ { bed:"01", an:"ERROR", name:"(ออฟไลน์) ดูประวัติล่าสุดจากในเครื่อง", dx:"-", rec:"-", dtx:"-", hct:"-", film:"-", ds:"-", consult:"-", nebulizer1:"-", nebulizer2:"-", onedayStat:"-", hc2:"-", hc5:"-", lab:"-" } ];
                     patientsData.forEach(pt => {
                         if(!globalState[pt.bed]) globalState[pt.bed] = { text: '', canvas: null, stampCount: 0, photos: [], io:'', film:'', ds:'', consult:'', hc2:'', hc5:'', lab:'' };
                     });
                 }
                 initApp();
-                Swal.fire('เชื่อมต่อล้มเหลว', 'อาจเกิดจากอินเทอร์เน็ต หรือสิทธิ์ของ Script<br>ระบบใช้ข้อมูลที่บันทึกไว้ล่าสุดแทน', 'error');
+                Swal.fire('เชื่อมต่อล้มเหลว', 'อาจเกิดจากอินเทอร์เน็ตหลุด<br>ระบบใช้ข้อมูลที่บันทึกไว้ในเครื่องล่าสุดแทน', 'error');
             }
         }
 
+        // --- เตรียมความพร้อมหน้าจอหลังโหลดเสร็จ ---
         function initApp() {
             document.getElementById('patient-count').innerText = `${patientsData.length} ราย`;
-            renderWorkList(); renderNewOrder(); buildCardPills();
+            
+            // สร้าง HTML ลง DOM ทุกส่วนให้พร้อม
+            renderWorkList(); 
+            renderNewOrder(); 
+            buildCardPills();
             if(document.getElementById('view-workcard').style.display === 'block') renderSingleCard(currentBedIndex);
             
+            // เติมค่าต่างๆ กลับเข้ากล่อง Input
             patientsData.forEach(pt => {
                 ['io', 'film', 'ds', 'consult', 'hc2', 'hc5', 'lab'].forEach(field => {
                     const val = globalState[pt.bed][field] || '';
@@ -345,8 +354,8 @@
                 });
             });
             
-            // ซิงก์กระดานทั้งหมดทันทีที่โหลดเสร็จ
-            setTimeout(() => { syncAllCanvases(); }, 100);
+            // ซิงก์กระดานรอบแรกหลังทุกอย่างวาดเสร็จ
+            setTimeout(() => { syncAllCanvases(); }, 150);
         }
 
         function saveToLocal() {
@@ -365,7 +374,7 @@
             handleStateChange(bed, 'text', currentText + (currentText ? '\n' : '') + `${label}: ${text}`);
         }
 
-        // --- ระบบถ่ายภาพ ---
+        // --- การจัดการรูปถ่าย ---
         async function handlePhotoUpload(bed, input) {
             const files = input.files;
             if(!globalState[bed].photos) globalState[bed].photos = [];
@@ -466,16 +475,19 @@
 
         // --- Render UI ---
         function renderWorkList() {
-            const container = document.getElementById('view-worklist'); container.innerHTML = '';
+            const container = document.getElementById('view-worklist'); 
+            let htmlStr = '';
+            
             patientsData.forEach(pt => {
                 const cid = `canvas-wl-${pt.bed}`;
-                container.innerHTML += `
+                const st = globalState[pt.bed] || {};
+                htmlStr += `
                     <div class="patient-card">
                         <div class="card-header"><span class="bed-badge">เตียง ${pt.bed}</span><span style="font-size:1.25rem; font-weight:600;">${pt.name}</span></div>
                         ${createInfoGrid(pt)}
                         <div class="note-section">
                             <label style="font-weight:600; color:var(--primary); font-size:0.9rem;"><i class="fa-solid fa-keyboard"></i> พิมพ์โน้ต</label>
-                            <textarea data-bind="${pt.bed}-text" class="text-note" oninput="handleStateChange('${pt.bed}', 'text', this.value)">${globalState[pt.bed].text}</textarea>
+                            <textarea data-bind="${pt.bed}-text" class="text-note" oninput="handleStateChange('${pt.bed}', 'text', this.value)">${st.text || ''}</textarea>
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
                                 <label style="font-weight:600; color:var(--primary); font-size:0.9rem;"><i class="fa-solid fa-pen-clip"></i> วาดโน้ต & Anatomy</label>
                                 <div style="display:flex; gap:8px;">
@@ -488,13 +500,17 @@
                         </div>
                     </div>`;
             });
+            container.innerHTML = htmlStr;
             patientsData.forEach(pt => { setupCanvas(`canvas-wl-${pt.bed}`, pt.bed); renderPhotosDOM(pt.bed); });
         }
 
         function buildCardPills() {
-            const container = document.getElementById('bed-pills'); container.innerHTML = '';
+            const container = document.getElementById('bed-pills'); 
+            container.innerHTML = '';
             patientsData.forEach((pt, idx) => {
-                const pill = document.createElement('div'); pill.className = `bed-pill ${idx === currentBedIndex ? 'active' : ''}`; pill.innerText = `เตียง ${pt.bed}`;
+                const pill = document.createElement('div'); 
+                pill.className = `bed-pill ${idx === currentBedIndex ? 'active' : ''}`; 
+                pill.innerText = `เตียง ${pt.bed}`;
                 pill.onclick = () => { 
                     document.querySelectorAll('.bed-pill').forEach(p => p.classList.remove('active')); 
                     pill.classList.add('active'); 
@@ -508,13 +524,17 @@
         }
 
         function renderSingleCard(idx) {
-            const pt = patientsData[idx]; const container = document.getElementById('single-card-container'); const cid = `canvas-single-${pt.bed}`;
+            const pt = patientsData[idx]; 
+            const container = document.getElementById('single-card-container'); 
+            const cid = `canvas-single-${pt.bed}`;
+            const st = globalState[pt.bed] || {};
+            
             container.innerHTML = `
                 <div class="patient-card">
                     <div class="card-header"><span class="bed-badge">เตียง ${pt.bed}</span><span style="font-size:1.25rem; font-weight:600;">${pt.name}</span></div>
                     ${createInfoGrid(pt)}
                     <div class="note-section">
-                        <textarea data-bind="${pt.bed}-text" class="text-note" oninput="handleStateChange('${pt.bed}', 'text', this.value)">${globalState[pt.bed].text}</textarea>
+                        <textarea data-bind="${pt.bed}-text" class="text-note" oninput="handleStateChange('${pt.bed}', 'text', this.value)">${st.text || ''}</textarea>
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
                             <label style="font-weight:600; color:var(--primary); font-size:0.9rem;">วาดโน้ต</label>
                             <div style="display:flex; gap:8px;">
@@ -526,19 +546,27 @@
                         ${createPhotoSection(pt.bed)}
                     </div>
                 </div>`;
-            setupCanvas(cid, pt.bed); renderPhotosDOM(pt.bed);
-            setTimeout(() => { syncAllCanvases(); }, 50); // ซิงก์ทันทีเมื่อเปิดการ์ด
+                
+            setupCanvas(cid, pt.bed); 
+            renderPhotosDOM(pt.bed);
+            setTimeout(() => { syncAllCanvases(); }, 50);
         }
 
+        // --- แก้ปัญหา New Order หน้าจอขาว 100% ---
         function renderNewOrder() {
-            const cardsView = document.getElementById('neworder-cards-view'); const tbody = document.getElementById('neworder-tbody');
-            cardsView.innerHTML = ''; tbody.innerHTML = '';
+            const cardsView = document.getElementById('neworder-cards-view'); 
+            const tbody = document.getElementById('neworder-tbody');
+            
+            if (!patientsData || patientsData.length === 0) return;
+            
+            let htmlCards = '';
+            let htmlTable = '';
             
             patientsData.forEach(pt => {
                 const cid = `canvas-no-${pt.bed}`;
-                const st = globalState[pt.bed];
+                const st = globalState[pt.bed] || {};
                 
-                cardsView.innerHTML += `
+                htmlCards += `
                     <div class="patient-card">
                         <div class="card-header" style="border-bottom-color:#fbbf24;"><span class="bed-badge" style="color:#d97706;">เตียง ${pt.bed}</span><span style="font-size:1.25rem; font-weight:600;">${pt.name}</span></div>
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
@@ -564,7 +592,7 @@
                         </div>
                     </div>`;
 
-                tbody.innerHTML += `
+                htmlTable += `
                     <tr>
                         <td style="font-weight:600; color:var(--primary);">${pt.bed}</td><td style="font-weight:600; min-width: 150px;">${pt.name}</td>
                         <td><input type="text" data-bind="${pt.bed}-io" value="${st.io || ''}" oninput="handleStateChange('${pt.bed}', 'io', this.value)"></td>
@@ -579,26 +607,38 @@
                         <td><textarea data-bind="${pt.bed}-text" oninput="handleStateChange('${pt.bed}', 'text', this.value)" style="min-width: 150px;">${st.text || ''}</textarea></td>
                     </tr>`;
             });
-            patientsData.forEach(pt => { setupCanvas(`canvas-no-${pt.bed}`, pt.bed); renderPhotosDOM(pt.bed); });
-        }
-
-        // --- แก้มุมมอง New Order ---
-        function toggleNewOrderView() {
-            newOrderViewMode = newOrderViewMode === 'card' ? 'table' : 'card';
-            document.getElementById('neworder-cards-view').style.display = newOrderViewMode === 'card' ? 'block' : 'none';
-            document.getElementById('neworder-table-view').style.display = newOrderViewMode === 'table' ? 'block' : 'none';
             
-            if(newOrderViewMode === 'card') {
-                setTimeout(() => { syncAllCanvases(); }, 50);
-            }
+            cardsView.innerHTML = htmlCards;
+            tbody.innerHTML = htmlTable;
+
+            patientsData.forEach(pt => { 
+                setupCanvas(`canvas-no-${pt.bed}`, pt.bed); 
+                renderPhotosDOM(pt.bed); 
+            });
         }
 
-        // --- แก้การสลับหน้าจอ (ซิงก์เรียลไทม์) ---
+        // --- ระบบสลับหน้าจอ (แก้ปัญหาแสดงผลผิดพลาด) ---
+        function toggleNewOrderView() {
+            newOrderViewMode = (newOrderViewMode === 'card') ? 'table' : 'card';
+            const isCardMode = (newOrderViewMode === 'card');
+            
+            document.getElementById('neworder-cards-view').style.display = isCardMode ? 'block' : 'none';
+            document.getElementById('neworder-table-view').style.display = isCardMode ? 'none' : 'block';
+            
+            if(isCardMode) { setTimeout(() => { syncAllCanvases(); }, 50); }
+        }
+
         function switchView(viewName) {
+            // ปรับสีปุ่ม
             document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`nav-${viewName}`).classList.add('active');
-            ['worklist', 'workcard', 'neworder', 'history'].forEach(v => document.getElementById(`view-${v}`).style.display = 'none');
             
+            // ซ่อนทุกหน้า
+            ['worklist', 'workcard', 'neworder', 'history'].forEach(v => {
+                document.getElementById(`view-${v}`).style.display = 'none';
+            });
+            
+            // เปิดหน้าที่เลือก
             document.getElementById(`view-${viewName}`).style.display = 'block';
 
             if(viewName === 'workcard') {
@@ -606,10 +646,15 @@
                 renderSingleCard(currentBedIndex);
             } else if(viewName === 'history') {
                 loadCloudHistory();
+            } else if(viewName === 'neworder') {
+                // บังคับโหมดปัจจุบัน
+                const isCardMode = (newOrderViewMode === 'card');
+                document.getElementById('neworder-cards-view').style.display = isCardMode ? 'block' : 'none';
+                document.getElementById('neworder-table-view').style.display = isCardMode ? 'none' : 'block';
             }
             
-            // ใช้การหน่วงเวลาเพื่อรอให้ Display ทำงาน แล้วค่อยคำนวณและแปะภาพลง Canvas
-            setTimeout(() => { syncAllCanvases(); }, 50);
+            // หน่วงเวลาให้ CSS ทำงานเสร็จ ค่อยซิงก์รูปวาด
+            setTimeout(() => { syncAllCanvases(); }, 100);
         }
 
         // --- Canvas Engine ---
@@ -617,30 +662,27 @@
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
-            
-            const enforceSize = () => {
-                const rect = canvas.parentElement.getBoundingClientRect();
-                if(rect.width > 0 && canvas.width !== Math.floor(rect.width)) {
-                    canvas.width = rect.width; canvas.height = rect.height;
-                    if (globalState[bed].canvas) {
-                        const img = new Image(); img.onload = () => ctx.drawImage(img, 0, 0); img.src = globalState[bed].canvas;
-                    }
-                }
-            };
-            enforceSize();
 
             let isDrawing = false, startX, startY, snapshot;
+            
             canvas.addEventListener('pointerdown', (e) => {
                 if (e.pointerType !== 'pen' && e.pointerType !== 'mouse') return;
-                enforceSize();
-                isDrawing = true; startX = e.offsetX; startY = e.offsetY;
+                isDrawing = true; 
+                startX = e.offsetX; 
+                startY = e.offsetY;
                 snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                ctx.beginPath(); ctx.moveTo(startX, startY);
-                if (currentTool === 'eraser') { ctx.globalCompositeOperation = 'destination-out'; ctx.lineWidth = currentSize * 10; }
-                else {
-                    ctx.globalCompositeOperation = 'source-over'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+                ctx.beginPath(); 
+                ctx.moveTo(startX, startY);
+                if (currentTool === 'eraser') { 
+                    ctx.globalCompositeOperation = 'destination-out'; 
+                    ctx.lineWidth = currentSize * 10; 
+                } else {
+                    ctx.globalCompositeOperation = 'source-over'; 
+                    ctx.lineCap = 'round'; 
+                    ctx.lineJoin = 'round';
                     ctx.strokeStyle = currentTool === 'highlighter' ? currentColor + '44' : currentColor;
-                    ctx.fillStyle = currentColor; ctx.lineWidth = currentTool === 'highlighter' ? currentSize * 6 : currentSize;
+                    ctx.fillStyle = currentColor; 
+                    ctx.lineWidth = currentTool === 'highlighter' ? currentSize * 6 : currentSize;
                 }
                 e.preventDefault();
             });
@@ -648,11 +690,23 @@
             canvas.addEventListener('pointermove', (e) => {
                 if (!isDrawing) return;
                 if(['line', 'rect', 'circle'].includes(currentTool)) {
-                    ctx.putImageData(snapshot, 0, 0); ctx.beginPath();
-                    if(currentTool === 'line') { ctx.moveTo(startX, startY); ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); }
-                    else if(currentTool === 'rect') { const w = e.offsetX - startX; const h = e.offsetY - startY; if(isFillShape) { ctx.globalAlpha = 0.5; ctx.fillRect(startX, startY, w, h); ctx.globalAlpha=1.0; } ctx.rect(startX, startY, w, h); ctx.stroke(); }
-                    else if(currentTool === 'circle') { const r = Math.sqrt(Math.pow(startX-e.offsetX,2) + Math.pow(startY-e.offsetY,2)); ctx.arc(startX, startY, r, 0, 2*Math.PI); if(isFillShape) { ctx.globalAlpha = 0.5; ctx.fill(); ctx.globalAlpha=1.0; } ctx.stroke(); }
-                } else { ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); }
+                    ctx.putImageData(snapshot, 0, 0); 
+                    ctx.beginPath();
+                    if(currentTool === 'line') { 
+                        ctx.moveTo(startX, startY); ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); 
+                    } else if(currentTool === 'rect') { 
+                        const w = e.offsetX - startX; const h = e.offsetY - startY; 
+                        if(isFillShape) { ctx.globalAlpha = 0.5; ctx.fillRect(startX, startY, w, h); ctx.globalAlpha=1.0; } 
+                        ctx.rect(startX, startY, w, h); ctx.stroke(); 
+                    } else if(currentTool === 'circle') { 
+                        const r = Math.sqrt(Math.pow(startX-e.offsetX,2) + Math.pow(startY-e.offsetY,2)); 
+                        ctx.arc(startX, startY, r, 0, 2*Math.PI); 
+                        if(isFillShape) { ctx.globalAlpha = 0.5; ctx.fill(); ctx.globalAlpha=1.0; } 
+                        ctx.stroke(); 
+                    }
+                } else { 
+                    ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); 
+                }
                 e.preventDefault();
             });
 
@@ -663,34 +717,53 @@
                     saveToLocal(); 
                 } 
             };
-            canvas.addEventListener('pointerup', stopDraw); canvas.addEventListener('pointerleave', stopDraw);
+            canvas.addEventListener('pointerup', stopDraw); 
+            canvas.addEventListener('pointerleave', stopDraw);
         }
 
         function clearNotePrompt(bed) {
             Swal.fire({ title: 'ยืนยันลบกระดาน?', text: "เฉพาะรูปลายเส้นและแบบฟอร์มบนกระดานจะหายไป", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ลบทิ้ง', cancelButtonText: 'ยกเลิก' }).then((r) => {
                 if (r.isConfirmed) {
-                    globalState[bed].canvas = null; globalState[bed].stampCount = 0; saveToLocal();
-                    syncAllCanvases(); // ซิงก์ลบกระดานให้หน้าอื่นรับทราบทันที
+                    globalState[bed].canvas = null; 
+                    globalState[bed].stampCount = 0; 
+                    saveToLocal();
+                    syncAllCanvases(); // สั่งซิงก์เคลียร์กระดานทุกหน้า
                     Swal.fire('ลบแล้ว!', '', 'success');
                 }
             });
         }
 
-        function prepareAnatomy(bed, canvasId) { activeBed = bed; activeCanvasId = canvasId; document.getElementById('anatomy-modal').style.display = 'flex'; }
+        function prepareAnatomy(bed, canvasId) { 
+            activeBed = bed; 
+            activeCanvasId = canvasId; 
+            document.getElementById('anatomy-modal').style.display = 'flex'; 
+        }
+
         function stampAnatomy(part) {
             if(!activeCanvasId) return;
-            const canvas = document.getElementById(activeCanvasId); const ctx = canvas.getContext('2d');
-            const imgSize = 90; const padding = 10; let count = globalState[activeBed].stampCount || 0;
-            if(canvas.width === 0) { const rect = canvas.parentElement.getBoundingClientRect(); canvas.width = rect.width; canvas.height = rect.height; }
+            const canvas = document.getElementById(activeCanvasId); 
+            const ctx = canvas.getContext('2d');
+            const imgSize = 90; const padding = 10; 
+            let count = globalState[activeBed].stampCount || 0;
+            
+            // ป้องกันขนาดกระดานพัง
+            if(canvas.width === 0) { 
+                const rect = canvas.parentElement.getBoundingClientRect(); 
+                canvas.width = rect.width; canvas.height = rect.height; 
+            }
             
             const cols = Math.max(1, Math.floor(canvas.width / (imgSize + padding)));
-            const x = (count % cols) * (imgSize + padding) + padding; const y = Math.floor(count / cols) * (imgSize + padding) + padding;
+            const x = (count % cols) * (imgSize + padding) + padding; 
+            const y = Math.floor(count / cols) * (imgSize + padding) + padding;
             
             const img = new Image();
             img.onload = () => {
                 ctx.globalAlpha = 0.5; ctx.drawImage(img, x, y, imgSize, imgSize); ctx.globalAlpha = 1.0;
-                globalState[activeBed].stampCount = count + 1; globalState[activeBed].canvas = canvas.toDataURL(); saveToLocal();
+                globalState[activeBed].stampCount = count + 1; 
+                globalState[activeBed].canvas = canvas.toDataURL(); 
+                saveToLocal();
                 document.getElementById('anatomy-modal').style.display = 'none';
+                syncAllCanvases(); // ซิงก์ลายปั๊มไปทุกหน้าทันที
             };
             img.src = anatomyImages[part];
         }
@@ -744,7 +817,11 @@
             if(!savedState) return;
             Swal.fire({ title: 'ต้องการดึงประวัตินี้?', text: "ข้อมูลปัจจุบันที่คุณเขียนค้างไว้จะถูกแทนที่", icon: 'warning', showCancelButton: true, confirmButtonColor: '#2563eb', confirmButtonText: 'ตกลง', cancelButtonText: 'ยกเลิก' }).then((r) => {
                 if(r.isConfirmed) {
-                    globalState = savedState; saveToLocal(); initApp(); switchView('worklist'); Swal.fire('สำเร็จ', 'โหลดข้อมูลประวัติมาแสดงผลแล้ว', 'success');
+                    globalState = savedState; 
+                    saveToLocal(); 
+                    initApp(); 
+                    switchView('worklist'); 
+                    Swal.fire('สำเร็จ', 'โหลดข้อมูลประวัติมาแสดงผลแล้ว', 'success');
                 }
             });
         }
