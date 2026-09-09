@@ -94,7 +94,7 @@
 
     <div id="loading-screen">
         <i class="fa-solid fa-notes-medical fa-beat" style="font-size: 3.5rem; color: var(--primary);"></i>
-        <div class="loading-text">กำลังซิงก์ข้อมูล... <span id="load-percent">0%</span></div>
+        <div class="loading-text">กำลังโหลดข้อมูล... <span id="load-percent">0%</span></div>
         <div class="progress-container"><div class="progress-bar" id="load-bar"></div></div>
     </div>
 
@@ -127,20 +127,17 @@
         <div class="color-dot" style="background:#16a34a;" onclick="setColor('#16a34a', this)"></div>
         <div class="color-dot" style="background:#1e293b;" onclick="setColor('#1e293b', this)"></div>
         <div style="width: 1px; height: 20px; background: var(--border-color); margin: 0 5px;"></div>
-        <input type="range" id="pen-size" class="size-slider" min="1" max="20" value="2" onchange="updateSize(this.value)">
+        <input type="range" id="pen-size" class="size-slider" min="1" max="20" value="2" onchange="updateSize(this.value)" title="ปรับขนาดปากกา">
     </div>
 
     <div class="container">
-        <!-- View: WORK list -->
         <div id="view-worklist"></div>
         
-        <!-- View: WORK card -->
         <div id="view-workcard" style="display: none;">
             <div class="card-view-selector" id="bed-pills"></div>
             <div id="single-card-container"></div>
         </div>
         
-        <!-- View: New Order -->
         <div id="view-neworder" style="display: none;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">
                 <h3 style="color:var(--primary);">รายการ New Order</h3>
@@ -155,7 +152,6 @@
             </div>
         </div>
         
-        <!-- View: History -->
         <div id="view-history" style="display: none;">
             <div class="patient-card">
                 <div style="display:flex; justify-content:space-between;">
@@ -179,7 +175,6 @@
         <button class="nav-item" id="nav-history" onclick="switchView('history')"><i class="fa-solid fa-cloud"></i> History</button>
     </nav>
 
-    <!-- Modal Anatomy -->
     <div class="anatomy-modal" id="anatomy-modal">
         <div style="background:#fff; padding:25px; border-radius:8px; width:90%; max-width:400px;">
             <div style="display:flex; justify-content:space-between;">
@@ -198,10 +193,10 @@
     </div>
 
     <script>
-        // ----------------------------------------------------------------------------------
-        // ใส่ URL ที่ได้จากขั้นตอนที่ 1 ลงในเครื่องหมายคำพูดด้านล่างนี้
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbwRFtB9qeBmpGzO9OZQrSMEOgE4Py6_aS2fRf6hs8VxH5sk6GCyjXK1eQQF02LHQWFo/exec'; 
-        // ----------------------------------------------------------------------------------
+        // =========================================================================
+        // ใส่ URL ที่ได้จากขั้นตอนที่ 1 ลงในเครื่องหมายคำพูดด้านล่างนี้เลยครับ
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycby3KasENxwkiOXQkfHErFceUG2ygxLSli1YWTpf4QkYkNtXcFk1V6qQEPmX-yX5rKr_/exec'; 
+        // =========================================================================
 
         let patientsData = [];
         let globalState = {}; 
@@ -218,7 +213,6 @@
             abdomen: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="%2364748b" stroke-width="2"><rect x="20" y="20" width="60" height="60" rx="15"/></svg>'
         };
 
-        // --- ตั้งค่าเครื่องมือ ---
         function setTool(tool) {
             currentTool = tool; document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`tool-${tool}`).classList.add('active');
@@ -232,13 +226,13 @@
             isFillShape = !isFillShape; document.getElementById('tool-fill').classList.toggle('active', isFillShape);
         }
 
-        // --- ระบบโหลดข้อมูล ป้องกันการแครช ---
+        // --- ระบบดึงข้อมูล ---
         async function fetchDataFromServer(showLoader = true, isSilentSync = false) {
             const loader = document.getElementById('loading-screen');
             const pBar = document.getElementById('load-bar');
             const pText = document.getElementById('load-percent');
 
-            // Timeout กันหน้าจอโหลดค้าง 8 วินาที
+            // Timer ตัดจบถ้าโหลดเกิน 8 วิ
             const fallbackTimer = setTimeout(() => {
                 if (loader.style.display !== 'none') {
                     loader.style.display = 'none';
@@ -259,16 +253,10 @@
             }, 50);
 
             try {
-                // ดึงข้อมูลแบบส่ง Content-Type text/plain ป้องกัน Preflight CORS Block
-                const response = await fetch(GAS_URL + (isSilentSync ? '?t=' + Date.now() : ''), {
-                    method: 'GET',
-                    headers: { 'Accept': 'application/json' }
-                });
-                
-                if (!response.ok) throw new Error('Network status: ' + response.status);
-                
+                // เรียกข้อมูลโดยไม่ต้องมี Header เพื่อกันปัญหา CORS Block
+                const response = await fetch(GAS_URL + (isSilentSync ? '?t=' + Date.now() : ''));
+                if (!response.ok) throw new Error('Network error');
                 const resData = await response.json();
-                if(resData.error) throw new Error(resData.error);
                 
                 clearInterval(interval);
                 clearTimeout(fallbackTimer);
@@ -299,7 +287,7 @@
 
                 if(showLoader && !isSilentSync) { setTimeout(() => { loader.style.display = 'none'; }, 300); }
                 if(needRender || (showLoader && !isSilentSync)) initApp();
-                document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-check" style="color:#10b981;"></i> ซิงก์แล้ว';
+                document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-check" style="color:#10b981;"></i> ซิงก์ล่าสุดเมื่อครู่';
                 
             } catch (err) {
                 clearInterval(interval);
@@ -307,7 +295,7 @@
                 if(showLoader && !isSilentSync) loader.style.display = 'none';
                 
                 if (patientsData.length === 0) loadMockData(err.message);
-                if(!isSilentSync) Swal.fire('ดึงข้อมูลไม่สำเร็จ', 'ระบบจำลองข้อมูลขึ้นมาแทน กรุณาตรวจสอบ URL หรือการตั้งค่าอินเทอร์เน็ต', 'warning');
+                if(!isSilentSync) Swal.fire('ข้อมูลมีปัญหา', 'ดึงข้อมูลจาก Google Sheet ไม่สำเร็จ โปรดตรวจเช็ค URL หรืออินเทอร์เน็ต ระบบแสดงข้อมูลจำลองขึ้นมาแทน', 'warning');
                 document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-xmark" style="color:#ef4444;"></i> ออฟไลน์';
             }
         }
@@ -327,22 +315,26 @@
             document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> อัปโหลด...';
             syncTimeout = setTimeout(async () => {
                 try {
-                    await fetch(GAS_URL, { 
-                        method: 'POST', 
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // ส่งเป็น text เพื่อไม่ให้ติด Preflight CORS
-                        body: JSON.stringify({action: 'sync_live', state: globalState}) 
-                    });
+                    // ส่งแบบ text/plain ป้องกัน CORS Preflight
+                    await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({action: 'sync_live', state: globalState}) });
                     document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-check" style="color:#10b981;"></i> ซิงก์แล้ว';
                 } catch(e) {
                     document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud-xmark" style="color:#ef4444;"></i> ผิดพลาด';
                 }
-            }, 2000);
+            }, 1500);
         }
 
         function initApp() {
             document.getElementById('patient-count').innerText = `${patientsData.length} ราย`;
             renderWorkList(); renderNewOrder(); buildCardPills();
             if(document.getElementById('view-workcard').style.display === 'block') renderSingleCard(currentBedIndex);
+            
+            patientsData.forEach(pt => {
+                ['io', 'film', 'ds', 'consult', 'hc2', 'hc5', 'lab'].forEach(field => {
+                    const val = globalState[pt.bed][field] || '';
+                    document.querySelectorAll(`[data-bind="${pt.bed}-${field}"]`).forEach(el => el.value = val);
+                });
+            });
         }
 
         function handleStateChange(bed, field, val) {
@@ -353,7 +345,7 @@
         
         function appendToNote(bed, label, text) {
             if(text === '-' || text.trim() === '') return;
-            const currentText = globalState[bed].text;
+            const currentText = globalState[bed].text || '';
             handleStateChange(bed, 'text', currentText + (currentText ? '\n' : '') + `${label}: ${text}`);
         }
 
@@ -361,7 +353,7 @@
         async function handlePhotoUpload(bed, input) {
             const files = input.files;
             if(!globalState[bed].photos) globalState[bed].photos = [];
-            if(globalState[bed].photos.length + files.length > 4) { Swal.fire('คำเตือน', 'แนบรูปได้สูงสุด 4 รูป', 'warning'); return; }
+            if(globalState[bed].photos.length + files.length > 4) { Swal.fire('คำเตือน', 'แนบรูปได้สูงสุด 4 รูปต่อเตียง', 'warning'); return; }
             Swal.fire({title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
             
             for(let i=0; i<files.length; i++) {
@@ -409,8 +401,9 @@
         async function shareToLine(bed) {
             const pt = patientsData.find(p => p.bed === bed); const state = globalState[bed];
             const text = `ส่งเวรเตียง ${pt.bed}\nชื่อ: ${pt.name}\nDiagnosis: ${pt.dx}\n${state.text ? 'Note: '+state.text : ''}`;
-            if(!navigator.share) { Swal.fire('ไม่รองรับ', 'เบราว์เซอร์นี้ไม่รองรับระบบแชร์', 'error'); return; }
-            Swal.fire({title: 'กำลังเตรียมไฟล์...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+            if(!navigator.share) { Swal.fire('ไม่รองรับ', 'เบราว์เซอร์ของอุปกรณ์นี้ไม่รองรับระบบแชร์ไฟล์โดยตรง', 'error'); return; }
+            
+            Swal.fire({title: 'กำลังเตรียมรูปภาพ...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
             const filesArray = [];
             if(state.photos && state.photos.length > 0) {
                 for(let i=0; i<state.photos.length; i++) {
@@ -593,7 +586,6 @@
             }
         }
 
-        // --- Navigation ---
         function switchView(viewName) {
             document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`nav-${viewName}`).classList.add('active');
@@ -622,7 +614,7 @@
                     }
                 }
             };
-            enforceSize(); // Initialize
+            enforceSize();
 
             let isDrawing = false, startX, startY, snapshot;
             canvas.addEventListener('pointerdown', (e) => {
